@@ -1,0 +1,105 @@
+## Default prometheus-operator values for all environments
+
+crds:
+  enabled: false
+
+## General
+nameOverride: "mycompany"
+
+defaultRules:
+  rules:
+    etcd: false
+    kubeScheduler: false
+
+## Alertmanager
+alertmanager:
+  enabled: true
+
+## Grafana
+grafana:
+  enabled: true
+
+## Exporters
+kubernetesServiceMonitors:
+  enabled: true
+
+kubeApiServer:
+  enabled: false
+
+kubelet:
+  enabled: true
+
+kubeControllerManager:
+  enabled: false
+
+coreDns:
+  enabled: false
+
+kubeDns:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeProxy:
+  enabled: false
+
+kubeStateMetrics:
+  enabled: false
+
+
+## Prometheus operator
+prometheusOperator:
+  admissionWebhooks:
+    enabled: true
+  kubeletService:
+    enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 400Mi
+    requests:
+      cpu: 100m
+      memory: 200Mi
+
+
+## Prometheus
+prometheus:
+  enabled: true
+
+  prometheusSpec:
+    image:
+      registry: quay.io
+      repository: prometheus/prometheus
+      tag: v3.3.0
+    resources:
+      limits:
+        cpu: 1024m
+        memory: 2Gi
+      requests:
+        cpu: 250m
+        memory: 500Mi
+    externalLabels:
+      cluster: kind-kind-multinodes
+    replicas: 1
+    scrapeInterval: 60s
+    replicaExternalLabelName: "replica"
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+  additionalServiceMonitors:
+    - name: "kube-pires"
+      jobLabel: "app_kubernetes_io_name"
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: kube-pires
+      namespaceSelector:
+        any: true
+      endpoints:
+        - port: "http"
+          path: /metrics
+
+thanosRuler:
+  enabled: false

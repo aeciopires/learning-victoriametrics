@@ -1,0 +1,30 @@
+controller:
+  tag: "v1.12.1"
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: "1024Mi"
+      cpu: "500m"
+  replicaCount: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 101
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+      add: ["SYS_TIME"]
+  configAnnotations:
+    allow-ingress-class-annotations: "true"
+
+  service:
+    type: LoadBalancer
+    #loadBalancerIP: "X.X.X.X" # ip-managed by MetalLB

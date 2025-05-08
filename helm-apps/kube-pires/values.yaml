@@ -1,0 +1,200 @@
+# Default values for kube-pires.
+
+# -- Number of replicas. Used if autoscaling is false
+replicaCount: 2
+
+# -- Update strategy configurations
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 6
+    maxUnavailable: 0
+
+# Docker images of example
+# https://hub.docker.com/r/yeasy/simple-web
+# https://hub.docker.com/r/paulbouwer/hello-kubernetes/
+# https://github.com/paulbouwer/hello-kubernetes
+
+image:
+  # -- Docker image name
+  repository: aeciopires/kube-pires
+  # -- Pull policy of Docker image
+  pullPolicy: IfNotPresent
+  # -- Docker image tag
+  tag: "1.1.0"
+
+# -- List of dockerconfig secrets names to use when pulling images
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Pod annotations configurations
+podAnnotations: {}
+
+# -- Pod security configurations
+podSecurityContext: {}
+  # fsGroup: 2000
+
+# -- Security context configurations
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  # -- Type of service in Kubernetes cluster
+  type: NodePort
+  # -- Port of service in Kubernetes cluster
+  port: 80
+  # -- Create GCP Backend and Frontend Config
+  createGcpBackendAndFrontendConfig: false
+  # -- Annotations of service
+  annotations: {}
+
+# Ingress configurations
+ingress:
+  # -- Enables Ingress
+  enabled: true
+  # -- Create GCP Managed Certificate
+  createGcpManagedCertificate: false
+  # -- Create Cert Manager Issuer
+  createCertManagerIssuer: false
+  # -- Email for Cert Manager Issue
+  certManagerIssueEmail: "CHANGE_HERE"
+  className: ""
+  # -- Ingress annotations
+  annotations:
+    #--- Annotations to create loadbalancer in AWS of the type application for external access of the VPC
+    #kubernetes.io/ingress.class: alb
+    #alb.ingress.kubernetes.io/scheme: internet-facing
+    #alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    #alb.ingress.kubernetes.io/ssl-redirect: "443"
+    #alb.ingress.kubernetes.io/healthcheck-path: "/"
+    #alb.ingress.kubernetes.io/healthcheck-port: http
+    #alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:AWS_REGION:AWS_ACCOUNT:certificate/ID_ACM_CERTIFICATE
+    #alb.ingress.kubernetes.io/tags: Scost=kube-pires, Environment=testing, Terraform=true, Kubernetes=true
+    #--- Annotations to use nginx-ingress
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: / # URL redirection
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true" # Force redirect to HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "true" # SSL redirection enabled
+    #--- Annotations to create loadbalancer in GCP of the type application for external access of the VPC
+    #kubernetes.io/ingress.class: "gce"
+    #kubernetes.io/ingress.allow-http: "true"
+    ## Name of static IP previous created in GCP
+    #kubernetes.io/ingress.global-static-ip-name: kube-pires
+    #networking.gke.io/v1beta1.FrontendConfig: kube-pires-frontend-config
+    ## Optional Annotation for GCP Managed Certificate
+    #networking.gke.io/managed-certificates: kube-pires-cert
+    ## Syntax '{"service_port_number/service_port_name:protocol"}'
+    #cloud.google.com/app-protocols: '{"http":"HTTP"}'
+    #--- Optional Annotation for cert-manager
+    cert-manager.io/cluster-issuer: "letsencrypt-prod-http01" # Using Let's Encrypt for the certificate
+  # -- Ingress hosts
+  hosts:
+    - host: kube-pires.aeciopires.com
+      paths:
+        - path: /
+          pathType: Prefix
+  # -- Ingress TLS configuration
+  tls:
+    - secretName: kube-pires-tls-secret
+      hosts:
+        - kube-pires.aeciopires.com
+
+# -- Requests and limits of pod resources.
+# See: [https://kubernetes.io/docs/concepts/configuration/manage-resources-containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers)
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 5m
+    memory: 5Mi
+
+# -- Auto scaling configurations
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# -- Health check on creation pod
+readinessProbe:
+  # -- Path of health check of application
+  path: /health
+  # -- Number of seconds after the container has started before readiness
+  initialDelaySeconds: 5
+  # -- Specifies that the kubelet should perform a liveness probe every N seconds
+  periodSeconds: 10
+  # -- Number of seconds after which the probe times out
+  timeoutSeconds: 5
+  # -- Minimum consecutive successes for the probe to be considered successful after having failed
+  successThreshold: 1
+  # -- When a probe fails, Kubernetes will try failureThreshold times before giving up.
+  # Giving up in case of liveness probe means restarting the container.
+  # In case of readiness probe the Pod will be marked Unready
+  failureThreshold: 3
+
+# -- Healh check continuos
+livenessProbe:
+  # -- Path of health check of application
+  path: /health
+  # -- Number of seconds after the container has started before liveness
+  initialDelaySeconds: 5
+  # -- Specifies that the kubelet should perform a liveness probe every N seconds
+  periodSeconds: 10
+  # -- Number of seconds after which the probe times out
+  timeoutSeconds: 5
+  # -- Minimum consecutive successes for the probe to be considered successful after having failed
+  successThreshold: 1
+  # -- When a probe fails, Kubernetes will try failureThreshold times before giving up.
+  # Giving up in case of liveness probe means restarting the container.
+  # In case of readiness probe the Pod will be marked Unready
+  failureThreshold: 3
+
+# -- Node selector configurations
+nodeSelector: {}
+
+# -- Tolerations configurations
+tolerations: []
+
+# -- Affinity configurations
+affinity: {}
+#  podAntiAffinity:
+#    requiredDuringSchedulingIgnoredDuringExecution:
+#    - labelSelector:
+#        matchLabels:
+#          app.kubernetes.io/name: kube-pires
+#      namespaces:
+#      - kube-pires
+#      topologyKey: kubernetes.io/hostname
+
+# -- Configurations of the application. Create configMap and Secret for use in deployment as environment variable
+mySecret:
+  enabled: true
+  mySecretLicenseKey: mysecurepassword2
+  mySecretHighSecurity: "false"
+  mySecretDistributedTracingEnabled: "true"
+
+# -- Service monitor configurations
+serviceMonitor:
+  enabled: true
+  additionalLabels: {}
+  path: "/metrics"
+  interval: "30s"
+  scrapeTimeout: "10s"
+  namespace: "myapps"
+  namespaceSelector: {}
+
+# -- Extra arbitrary Kubernetes manifests to deploy within the release
+extraManifests: []
+
+pdb:
+  enabled: true
+  maxUnavailable: 25%
