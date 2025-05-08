@@ -5,7 +5,7 @@
 - [install-ingress-nginx](#install-ingress-nginx)
 - [Requirements](#requirements)
 - [Troubleshooting](#troubleshooting)
-- [References:](#references)
+- [References](#references)
 
 <!-- TOC -->
 
@@ -22,6 +22,8 @@ List the resources.
 kubectl get all -n ingress-nginx
 ```
 
-# References:
+# References
 
-- 
+- https://artifacthub.io/packages/helm/ingress-nginx/ingress-nginx
+- https://kubernetes.github.io/ingress-nginx/
+- https://docs.nginx.com/nginx-ingress-controller/

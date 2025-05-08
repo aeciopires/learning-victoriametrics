@@ -96,7 +96,7 @@ ingress:
     cert-manager.io/cluster-issuer: "letsencrypt-prod-http01" # Using Let's Encrypt for the certificate
   # -- Ingress hosts
   hosts:
-    - host: kube-pires.aeciopires.com
+    - host: kube-pires.mycompany.com
       paths:
         - path: /
           pathType: Prefix
@@ -104,7 +104,7 @@ ingress:
   tls:
     - secretName: kube-pires-tls-secret
       hosts:
-        - kube-pires.aeciopires.com
+        - kube-pires.mycompany.com
 
 # -- Requests and limits of pod resources.
 # See: [https://kubernetes.io/docs/concepts/configuration/manage-resources-containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers)

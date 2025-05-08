@@ -1,5 +1,5 @@
 controller:
-  tag: "v1.12.1"
+  tag: "v1.12.2"
   resources:
     requests:
       memory: 256Mi

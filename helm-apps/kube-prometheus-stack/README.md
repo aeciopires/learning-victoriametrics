@@ -8,7 +8,7 @@
 - [Troubleshooting of Prometheus installation](#troubleshooting-of-prometheus-installation)
 - [Accessing AlertManager](#accessing-alertmanager)
 - [Accessing Grafana](#accessing-grafana)
-- [References:](#references)
+- [References](#references)
 
 <!-- TOC -->
 
@@ -105,6 +105,28 @@ kubectl edit secrets monitor-grafana -n monitoring
 Reference: https://dev.to/rayandasoriya/comment/dckk
 
 
-# References:
+# References
 
-- 
+- https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack
+
+More info about prometheus-operator can find in follow pages.
+
+- https://github.com/prometheus-operator/kube-prometheus
+- https://github.com/prometheus-operator/prometheus-operator
+- https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/
+- https://prometheus-operator.dev/
+- https://devops.college/prometheus-operator-how-to-monitor-an-external-service-3cb6ac8d5acb
+- https://blog.sebastian-daschner.com/entries/prometheus-kubernetes-operator
+- https://kruschecompany.com/kubernetes-prometheus-operator/
+- https://containerjournal.com/topics/container-management/cluster-monitoring-with-prometheus-operator/
+- https://sysdig.com/blog/kubernetes-monitoring-prometheus/
+- https://sysdig.com/blog/kubernetes-monitoring-with-prometheus-alertmanager-grafana-pushgateway-part-2/
+- https://sysdig.com/blog/kubernetes-monitoring-prometheus-operator-part3/
+
+About config parameters of prometheus-operator:
+
+- https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md
+- https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#remotewritespec
+- https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write
+- https://www.robustperception.io/dropping-metrics-at-scrape-time-with-prometheus
+

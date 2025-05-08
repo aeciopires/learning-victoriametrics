@@ -5,7 +5,7 @@
 - [install-kube-pires](#install-kube-pires)
 - [Requirements](#requirements)
 - [DNS](#dns)
-- [References:](#references)
+- [References](#references)
 
 <!-- TOC -->
 
@@ -20,11 +20,11 @@ If needs add entry in ``/etc/hosts`` file:
 
 ```bash
 # Add entry in /etc/hosts for kube-pires
-IP=$(kubectl get ing kube-pires -n myapps -o json | jq -r .status.loadBalancer.ingress[].ip)
-sudo sh -c "echo '$IP  kube-pires.domain.com' >> /etc/hosts"
+export IP=$(kubectl get ing kube-pires -n myapps -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  kube-pires.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  kube-pires.mycompany.com' >> /etc/hosts"
 ```
 
-Open the browser and access the URL: https://kube-pires.domain.com/
+Open the browser and access the URL: https://kube-pires.mycompany.com/
 
 ![kube-pires](../../images/kube-pires.png)
 
@@ -38,7 +38,6 @@ It's show the follow informations of the pods:
 - ``/env``     => Show the environment variables;
 - ``/css``     => Show the CSS template;
 
-# References:
+# References
 
 - https://gitlab.com/aeciopires/kube-pires
--

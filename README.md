@@ -1,6 +1,7 @@
 <!-- TOC -->
 
 - [Contributing](#contributing)
+- [VictoriaMetrics documentation](#victoriametrics-documentation)
 - [Requirements](#requirements)
 - [Create cluster and deploy applications](#create-cluster-and-deploy-applications)
   - [VictoriaMetrics Cluster Mode](#victoriametrics-cluster-mode)
@@ -18,7 +19,11 @@
 
 # Contributing
 
-1. See [CONTRIBUTING.md](CONTRIBUTING.md) file.
+See [CONTRIBUTING.md](CONTRIBUTING.md) file.
+
+# VictoriaMetrics documentation
+
+See [LEARNING_VICTORIAMETRICS.md](LEARNING_VICTORIAMETRICS.md) file.
 
 # Requirements
 

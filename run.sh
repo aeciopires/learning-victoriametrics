@@ -10,8 +10,12 @@ CLUSTER_NAME="kind-multinodes"
 KIND_CLUSTER_FILE="/tmp/kind-cluster.yaml"
 METALLB_CHART_VERSION="0.14.9"
 METALLB_FILE="/tmp/metallb-ingress-address.yaml"
-CERT_CLUSTER_ISSUE_FILE="/tmp/cert-cluster-issue.yaml"
+INGRESS_NGINX_VERSION='4.12.2'
+CERT_MANAGER_VERSION='v1.17.2'
+CERT_MANAGER_CLUSTER_ISSUE_FILE="/tmp/cert-cluster-issue.yaml"
+KUBE_PROMETHEUS_CHART_VERSION="72.2.0"
 KUBE_PROMETHEUS_STACK_VERSION="v0.82.0"
+KUBE_PIRES_DNS="kube-pires.mycompany.com"
 #------------------------
 
 
@@ -72,6 +76,8 @@ fi
 #-----------------------------------------------
 
 
+
+
 #---------------------------------------
 # Install Metallb
 #---------------------------------------
@@ -90,13 +96,15 @@ else
 
   # Install MetalLB and check if it is installed
   helm upgrade --install metallb metallb/metallb \
-    --create-namespace \
     --namespace metallb-system \
+    --create-namespace \
     --version "$METALLB_CHART_VERSION" \
+    --debug=true \
+    --wait \
+    --timeout=900s \
     --set "controller.tolerations[0].key=node-role.kubernetes.io/master" \
     --set "controller.tolerations[0].effect=NoSchedule" \
-    --set speaker.tolerateMaster=true \
-    --wait --debug --timeout=900s
+    --set speaker.tolerateMaster=true
 fi
 
 if [ ! -f "$METALLB_FILE" ]; then
@@ -140,26 +148,48 @@ fi
 kubectl apply -f "$METALLB_FILE" --namespace metallb-system
 #-----------------------------------------------
 
-# ingress-nginx
-# certificate-manager
 
 
-# kube-prometheus-stack
-kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagerconfigs.yaml"
-kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagers.yaml"
-kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml"
-kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_probes.yaml"
-kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_prometheusagents.yaml"
-kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_prometheuses.yaml"
-kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_prometheusrules.yaml"
-kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_scrapeconfigs.yaml"
-kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml"
-kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_thanosrulers.yaml"
+#---------------------------------------
+# Install ingress-nginx
+#---------------------------------------
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+
+helm repo update
+
+helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  --version "$INGRESS_NGINX_VERSION" \
+  --namespace ingress-nginx \
+  --create-namespace \
+  --debug=true \
+  --wait \
+  --timeout=900s \
+  -f helm-apps/ingress-nginx/values.yaml
+#-----------------------------------------------
+
+
+
+
+#---------------------------------------
+# Install certificate-manager
+#---------------------------------------
+helm repo add jetstack https://charts.jetstack.io
+
+helm repo update
+
+helm upgrade --install \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --debug=true \
+  --wait \
+  --timeout=900s \
+  --version "$CERT_MANAGER_VERSION" --set global.leaderElection.namespace=cert-manager --set crds.enabled=true
 
 # Creating a ClusterIssuer
-if [ ! -f "$CERT_CLUSTER_ISSUE_FILE" ]; then
+if [ ! -f "$CERT_MANAGER_CLUSTER_ISSUE_FILE" ]; then
 
-  cat << EOF > "$CERT_CLUSTER_ISSUE_FILE"
+  cat << EOF > "$CERT_MANAGER_CLUSTER_ISSUE_FILE"
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -177,19 +207,68 @@ spec:
           class: nginx
 EOF
 else
-  echo "[WARNING] $CERT_CLUSTER_ISSUE_FILE file already exists"
+  echo "[WARNING] $CERT_MANAGER_CLUSTER_ISSUE_FILE file already exists"
 fi
 
 echo "[INFO] Waiting for install cert-manager"
 # Reference: https://cert-manager.io/v1.7-docs/installation/verify/
 cmctl check api --wait=5m
-kubectl apply -f "$CERT_CLUSTER_ISSUE_FILE"
+kubectl apply -f "$CERT_MANAGER_CLUSTER_ISSUE_FILE"
 #-----------------------------------------------
 
 
-# kube-pires
+
+
+
+#---------------------------------------
+# Install kube-prometheus-stack
+#---------------------------------------
+
+# Install CRDs
+kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagerconfigs.yaml"
+kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagers.yaml"
+kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml"
+kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_probes.yaml"
+kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_prometheusagents.yaml"
+kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_prometheuses.yaml"
+kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_prometheusrules.yaml"
+kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_scrapeconfigs.yaml"
+kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml"
+kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_thanosrulers.yaml"
+
+# Install kube-prometheus-stack
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+helm repo update
+
+helm upgrade --install prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --version "$KUBE_PROMETHEUS_CHART_VERSION" \
+  --create-namespace \
+  --debug=true \
+  --wait \
+  --timeout=900s \
+  -f helm-apps/kube-prometheus-stack/values.yaml
+#-----------------------------------------------
+
+
+
+
+#---------------------------------------
+# Install kube-pires
+#---------------------------------------
+git clone https://gitlab.com/aeciopires/kube-pires /tmp/kube-pires
+
+helm upgrade --install kube-pires /tmp/kube-pires/helm-chart \
+  --namespace myapps \
+  --create-namespace \
+  --debug=true \
+  --wait \
+  --timeout=900s \
+  -f helm-apps/kube-pires/values.yaml
+
 # Add entry in /etc/hosts for kube-pires
-#IP=$(kubectl get ing kube-pires -n myapps -o json | jq -r .status.loadBalancer.ingress[].ip)
-#sudo sh -c "echo '$IP  kube-pires.mydomain.com' >> /etc/hosts"
+export IP=$(kubectl get ing kube-pires -n myapps -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  $KUBE_PIRES_DNS" /etc/hosts || sudo sh -c "echo '$IP  $KUBE_PIRES_DNS' >> /etc/hosts"
 #-----------------------------------------------
 

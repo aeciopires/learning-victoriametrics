@@ -5,7 +5,7 @@
 - [install-cert-manager](#install-cert-manager)
 - [Requirements](#requirements)
 - [Troubleshooting](#troubleshooting)
-- [References:](#references)
+- [References](#references)
 
 <!-- TOC -->
 
@@ -22,6 +22,9 @@ List the resources.
 kubectl get all -n cert-manager
 ```
 
-# References:
+# References
 
-- 
+- https://artifacthub.io/packages/helm/cert-manager/cert-manager
+- https://cert-manager.io/docs/
+- https://docs.cert-manager.io/
+ 
