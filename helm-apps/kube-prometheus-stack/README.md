@@ -104,6 +104,14 @@ kubectl edit secrets monitor-grafana -n monitoring
 
 Reference: https://dev.to/rayandasoriya/comment/dckk
 
+Dashboards to import:
+
+- [../kube-pires/kube-pires-dashboard.json](../kube-pires/kube-pires-dashboard.json)
+- https://grafana.com/grafana/dashboards/10229
+- https://grafana.com/grafana/dashboards/11040
+- https://grafana.com/grafana/dashboards/11039
+- https://grafana.com/grafana/dashboards/11038
+
 
 # References
 
