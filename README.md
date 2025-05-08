@@ -2,7 +2,7 @@
 
 - [Contributing](#contributing)
 - [Requirements](#requirements)
-- [Create the cluster and deploy applications](#create-the-cluster-and-deploy-applications)
+- [Create cluster and deploy applications](#create-cluster-and-deploy-applications)
   - [VictoriaMetrics Cluster Mode](#victoriametrics-cluster-mode)
   - [ingress-nginx](#ingress-nginx)
   - [certificate-manager](#certificate-manager)
@@ -16,8 +16,6 @@
 
 <!-- TOC -->
 
-Upwork - Kubernetes Senior Engineer challenge
-
 # Contributing
 
 1. See [CONTRIBUTING.md](CONTRIBUTING.md) file.
@@ -26,7 +24,7 @@ Upwork - Kubernetes Senior Engineer challenge
 
 Install all packages and binaries following this [tutorial](REQUIREMENTS.md).
 
-# Create the cluster and deploy applications
+# Create cluster and deploy applications
 
 Create kind cluster and install helm apps using ``make`` command:
 
