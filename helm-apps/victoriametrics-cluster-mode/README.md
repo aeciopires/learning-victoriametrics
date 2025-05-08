@@ -6,8 +6,9 @@
 - [Requirements](#requirements)
 - [Architecture](#architecture)
   - [vmui](#vmui)
-  - [vmauth](#vmauth)
-- [Accessing VictoriaMetrics](#accessing-victoriametrics)
+- [Troubleshooting](#troubleshooting)
+- [Write API](#write-api)
+  - [Read API](#read-api)
 - [References](#references)
 
 <!-- TOC -->
@@ -41,18 +42,47 @@ Each service may scale independently and may run on the most suitable hardware. 
 VictoriaMetrics cluster version provides UI for query troubleshooting and exploration. The UI is available at ``http://<vmselect>:8481/select/<accountID>/vmui/`` in each vmeselect service. The UI allows exploring query results via graphs and tables. See more details about vmui.
 Multitenancy
 
-## vmauth
+# Troubleshooting
 
-**vmauth** is an HTTP proxy, which can authorize, route and load balance 
-requests across VictoriaMetrics components or any other HTTP backends.
-Reference: https://docs.victoriametrics.com/victoriametrics/vmauth/
-
-# Accessing VictoriaMetrics
-
-Use command follow to access VMauth component:
+Get the pods lists by running these commands:
 
 ```bash
+kubectl get all -n monitoring | grep 'victoria\|vmauth'
+```
 
+# Write API
+
+``Inside`` cluster:
+
+The Victoria Metrics write api can be accessed via port **8480** on the following DNS name from within your cluster: **victoria-metrics-victoria-metrics-cluster-vminsert.monitoring.svc.cluster.local**
+
+> **NOTE:** But outside cluster the service is accessed in external URL.
+
+You need to update your prometheus configuration file and add next lines into it:
+
+**prometheus.yml**
+
+Internal URL for Prometheus sending data to Victoria Metrics:
+
+```yaml
+remote_write:
+  - url: "http://victoria-metrics-victoria-metrics-cluster-vminsert.monitoring.svc.cluster.local:8480/insert/0/prometheus/"
+```
+
+## Read API
+
+The Victoria Metrics read api can be accessed via port **8481** on the following DNS name from within your cluster: **victoria-metrics-victoria-metrics-cluster-vmselect.monitoring.svc.cluster.local**
+
+> **NOTE:** But outside cluster the service is accessed in external URL.
+
+You need to update specify select service URL in your Grafana:
+
+> NOTE: you need to use Prometheus Data Source
+
+Internal URL for datasource in Grafana installed inside cluster:
+
+```
+http://victoria-metrics-victoria-metrics-cluster-vmselect.monitoring.svc.cluster.local:8481/select/0/prometheus/
 ```
 
 # References

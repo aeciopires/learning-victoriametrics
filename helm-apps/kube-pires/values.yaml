@@ -68,30 +68,11 @@ ingress:
   className: ""
   # -- Ingress annotations
   annotations:
-    #--- Annotations to create loadbalancer in AWS of the type application for external access of the VPC
-    #kubernetes.io/ingress.class: alb
-    #alb.ingress.kubernetes.io/scheme: internet-facing
-    #alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-    #alb.ingress.kubernetes.io/ssl-redirect: "443"
-    #alb.ingress.kubernetes.io/healthcheck-path: "/"
-    #alb.ingress.kubernetes.io/healthcheck-port: http
-    #alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:AWS_REGION:AWS_ACCOUNT:certificate/ID_ACM_CERTIFICATE
-    #alb.ingress.kubernetes.io/tags: Scost=kube-pires, Environment=testing, Terraform=true, Kubernetes=true
     #--- Annotations to use nginx-ingress
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/rewrite-target: / # URL redirection
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true" # Force redirect to HTTPS
     nginx.ingress.kubernetes.io/ssl-redirect: "true" # SSL redirection enabled
-    #--- Annotations to create loadbalancer in GCP of the type application for external access of the VPC
-    #kubernetes.io/ingress.class: "gce"
-    #kubernetes.io/ingress.allow-http: "true"
-    ## Name of static IP previous created in GCP
-    #kubernetes.io/ingress.global-static-ip-name: kube-pires
-    #networking.gke.io/v1beta1.FrontendConfig: kube-pires-frontend-config
-    ## Optional Annotation for GCP Managed Certificate
-    #networking.gke.io/managed-certificates: kube-pires-cert
-    ## Syntax '{"service_port_number/service_port_name:protocol"}'
-    #cloud.google.com/app-protocols: '{"http":"HTTP"}'
     #--- Optional Annotation for cert-manager
     cert-manager.io/cluster-issuer: "letsencrypt-prod-http01" # Using Let's Encrypt for the certificate
   # -- Ingress hosts

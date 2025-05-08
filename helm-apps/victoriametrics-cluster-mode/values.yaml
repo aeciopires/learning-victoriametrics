@@ -1,0 +1,357 @@
+clusterDomainSuffix: cluster.local
+printNotes: true
+
+imagePullSecrets: []
+
+rbac:
+  create: true
+  pspEnabled: true
+  namespaced: false
+  extraLabels: {}
+  # annotations: {}
+
+serviceAccount:
+  create: true
+  # name:
+  extraLabels: {}
+  # annotations: {}
+  # mount API token to pod directly
+  automountToken: true
+
+vmselect:
+  enabled: true
+  name: vmselect
+  image:
+    repository: victoriametrics/vmselect
+    tag: v1.116.0-cluster
+    pullPolicy: IfNotPresent
+  priorityClassName: ""
+  fullnameOverride: ""
+  ## If true suppress rendering `--stroageNodes`, they can be re-defined in exrtaArgs
+  suppresStorageFQDNsRender: false
+  automountServiceAccountToken: true
+  extraArgs:
+    # See options in page: https://hub.docker.com/r/victoriametrics/victoria-metrics/
+    envflag.enable: "true"
+    envflag.prefix: VM_
+    loggerFormat: json
+    http.maxGracefulShutdownDuration: "60s"
+  annotations: {}
+  extraLabels:
+    app: vmselect
+  env: []
+
+  ## See `kubectl explain poddisruptionbudget.spec` for more
+  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 25%
+    labels: {}
+
+  ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+  ##
+  tolerations:
+    []
+    # - key: "key"
+    #   operator: "Equal|Exists"
+    #   value: "value"
+    #   effect: "NoSchedule|PreferNoSchedule"
+
+  ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector:
+    {}
+    ## Pod affinity
+    ##
+  affinity: {}
+  podAnnotations: {}
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 500Mi
+
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  securityContext: {}
+  podSecurityContext: {}
+  ## Root folder for cache
+  ##
+  cacheMountPath: /cache
+  service:
+    annotations: {}
+    labels:
+      app: vmselect
+    clusterIP: ""
+    ## Ref: https://kubernetes.io/docs/user-guide/services/#external-ips
+    ##
+    externalIPs: []
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    servicePort: 8481
+    type: ClusterIP
+  ingress:
+    enabled: false
+    annotations: {}
+    extraLabels:
+      app: vmselect
+    hosts: []
+    tls: []
+    #   - secretName: vmselect-ingress-tls
+    #     hosts:
+    #       - vmselect.local
+  statefulSet:
+    ## Creates statefulset instead of deployment, useful when you want to keep the cache
+    enabled: false
+    replicaCount: 2
+    podManagementPolicy: OrderedReady
+    ## Headless service for statefulset
+    service:
+      annotations: {}
+      labels: {}
+      servicePort: 8481
+  persistentVolume:
+    ## If true, vmselect will create/use a Persistent Volume Claim
+    ## If false, use emptyDir
+    ##
+    enabled: false
+
+    ## Must match those of existing PV or dynamic provisioner
+    ## Ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+    ##
+    accessModes:
+      - ReadWriteOnce
+    annotations: {}
+
+    ## Requires vmselect.persistentVolume.enabled: true
+    ## If defined, PVC must be created manually before volume will be bound
+    existingClaim: ""
+
+    ## Vmselect data Persistent Volume mount root path
+    ##
+    size: 8Gi
+    subPath: ""
+  serviceMonitor:
+    enabled: false
+    extraLabels:
+      app: vmselect
+    annotations: {}
+    interval: 60s
+    scrapeTimeout: 10s
+
+vminsert:
+  enabled: true
+  name: vminsert
+  image:
+    repository: victoriametrics/vminsert
+    tag: v1.116.0-cluster
+    pullPolicy: IfNotPresent
+  priorityClassName: ""
+  fullnameOverride: ""
+  extraArgs:
+    # See options in page: https://hub.docker.com/r/victoriametrics/victoria-metrics/
+    envflag.enable: "true"
+    envflag.prefix: VM_
+    loggerFormat: json
+    maxLabelsPerTimeseries: "60"
+    http.maxGracefulShutdownDuration: "60s"
+    insert.maxQueueDuration: "240s"
+    maxConcurrentInserts: "128"
+  annotations: {}
+  extraLabels:
+    app: vminsert
+  env: []
+  ## If true suppress rendering `--stroageNodes`, they can be re-defined in exrtaArgs
+  suppresStorageFQDNsRender: false
+  automountServiceAccountToken: true
+
+  ## See `kubectl explain poddisruptionbudget.spec` for more
+  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 25%
+    labels: {}
+
+  ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+  ##
+  tolerations:
+    []
+    # - key: "key"
+    #   operator: "Equal|Exists"
+    #   value: "value"
+    #   effect: "NoSchedule|PreferNoSchedule"
+
+  ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector: {}
+  ## Pod affinity
+  ##
+  affinity: {}
+  podAnnotations: {}
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 500Mi
+  securityContext: {}
+  podSecurityContext: {}
+  service:
+    annotations: {}
+    labels:
+      app: vminsert
+    clusterIP: ""
+    ## Ref: https://kubernetes.io/docs/user-guide/services/#external-ips
+    ##
+    externalIPs: []
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    servicePort: 8480
+    type: ClusterIP
+  ingress:
+    enabled: false
+    annotations: {}
+    extraLabels:
+      app: vminsert
+    hosts: []
+    tls: []
+    #   - secretName: vminsert-ingress-tls
+    #     hosts:
+    #       - vminsert.local
+  serviceMonitor:
+    enabled: false
+    extraLabels:
+      app: vminsert
+    annotations: {}
+    interval: 60s
+    scrapeTimeout: 10s
+
+vmstorage:
+  enabled: true
+  name: vmstorage
+  image:
+    repository: victoriametrics/vmstorage
+    tag: v1.116.0-cluster
+    pullPolicy: IfNotPresent
+  priorityClassName: ""
+  fullnameOverride:
+  automountServiceAccountToken: true
+  env: []
+  ## -- Data retention period. Supported values 1w, 1d, number without measurement means month, e.g. 2 = 2month
+  ## Data retention period in month
+  ##
+  retentionPeriod: 1
+  ## Additional vmstorage container arguments
+  ##
+  extraArgs:
+    # See options in page: https://hub.docker.com/r/victoriametrics/victoria-metrics/
+    envflag.enable: "true"
+    envflag.prefix: VM_
+    loggerFormat: json
+    http.maxGracefulShutdownDuration: "60s"
+
+  ## See `kubectl explain poddisruptionbudget.spec` for more
+  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 25%
+    labels: {}
+
+  ## Node tolerations for server scheduling to nodes with taints
+  ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+  ##
+  tolerations:
+    []
+    # - key: "key"
+    #   operator: "Equal|Exists"
+    #   value: "value"
+    #   effect: "NoSchedule|PreferNoSchedule"
+
+  ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector: {}
+
+  ## Pod affinity
+  ##
+  affinity: {}
+
+  ## Use an alternate scheduler, e.g. "stork".
+  ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  ##
+  # schedulerName:
+
+  persistentVolume:
+    ## If true, vmstorage will create/use a Persistent Volume Claim
+    ## If false, use emptyDir
+    ##
+    enabled: false
+
+    ## Must match those of existing PV or dynamic provisioner
+    ## Ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+    ##
+    accessModes:
+      - ReadWriteOnce
+    annotations: {}
+
+    ## Requires vmstorage.persistentVolume.enabled: true
+    ## If defined, PVC must be created manually before volume will be bound
+    existingClaim: ""
+
+    ## Vmstorage data Persistent Volume mount root path
+    ##
+    mountPath: /storage
+    size: 8Gi
+    subPath: ""
+
+  podAnnotations: {}
+  annotations: {}
+  extraLabels:
+    app: vmstorage
+  replicaCount: 2
+  podManagementPolicy: OrderedReady
+
+  ## Ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  resources:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 500Mi
+
+  ## Security context to be added to server pods
+  ##
+  securityContext: {}
+  podSecurityContext: {}
+  service:
+    annotations: {}
+    labels:
+      app: vmstorage
+    servicePort: 8482
+    vminsertPort: 8400
+    vmselectPort: 8401
+  terminationGracePeriodSeconds: 60
+  probe:
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 15
+      timeoutSeconds: 5
+      failureThreshold: 3
+    liveness:
+      initialDelaySeconds: 5
+      periodSeconds: 15
+      timeoutSeconds: 5
+      failureThreshold: 3
+  serviceMonitor:
+    enabled: false
+    extraLabels:
+      app: vmstorage
+    annotations: {}
+    interval: 60s
+    scrapeTimeout: 10s
+

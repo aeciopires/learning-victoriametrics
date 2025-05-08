@@ -1,0 +1,179 @@
+# Default values for victoria-metrics-auth.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 4
+
+image:
+  repository: victoriametrics/vmauth
+  tag: v1.116.0
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+containerWorkingDir: "/"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+## See `kubectl explain poddisruptionbudget.spec` for more
+## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+podDisruptionBudget:
+  apiVersion: policy/v1
+  enabled: true
+  maxUnavailable: 25%
+  labels: {}
+
+extraArgs:
+  envflag.enable: "true"
+  envflag.prefix: VM_
+  loggerFormat: json
+  http.maxGracefulShutdownDuration: "60s"
+  memory.allowedBytes: "300MB"
+  memory.allowedPercent: "60"
+  maxIdleConnsPerBackend: 150
+  http.connTimeout: "60s"
+  # promscrape.maxScrapeSize: "167772160"
+
+### additional environment variables (ex.: secret tokens)
+# https://github.com/VictoriaMetrics/VictoriaMetrics#environment-variables
+env: []
+
+# Additional hostPath mounts
+extraHostPathMounts:
+  []
+  # - name: certs-dir
+  #   mountPath: /etc/kubernetes/certs
+  #   subPath: ""
+  #   hostPath: /etc/kubernetes/certs
+  #   readOnly: true
+
+# Extra Volumes for the pod
+extraVolumes:
+  []
+  # - name: example
+  #   configMap:
+  #     name: example
+
+# Extra Volume Mounts for the container
+extraVolumeMounts:
+  []
+  # - name: example
+  #   mountPath: /example
+
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  enabled: true
+  annotations: {}
+  extraLabels: {}
+  clusterIP: ""
+  ## Ref: https://kubernetes.io/docs/user-guide/services/#external-ips
+  ##
+  externalIPs: []
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+  servicePort: 8427
+  type: NodePort
+
+
+ingress:
+  enabled: true
+  # ingressClassName: alb-external
+  annotations:
+    #--- Annotations to use nginx-ingress
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: / # URL redirection
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true" # Force redirect to HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "true" # SSL redirection enabled
+    #--- Optional Annotation for cert-manager
+    cert-manager.io/cluster-issuer: "letsencrypt-prod-http01" # Using Let's Encrypt for the certificate
+  extraLabels: {}
+  hosts:
+    - name: victoriametrics-cluster.mycompany.com
+      path: /
+      port: 8427
+  tls:
+    - secretName: vmauth-tls-secret
+      hosts:
+        - victoriametrics-cluster.mycompany.com
+
+ingressInternal:
+  enabled: false
+
+resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  limits:
+    cpu: "1"
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Annotations to be added to the deployment
+annotations: {}
+
+# Annotations to be added to pod
+podAnnotations: {}
+
+## Ref: https://kubernetes.io/docs/user-guide/node-selection/
+##
+nodeSelector: {}
+
+## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+##
+tolerations:
+  []
+  # - key: "key"
+  #   operator: "Equal|Exists"
+  #   value: "value"
+  #   effect: "NoSchedule|PreferNoSchedule"
+
+affinity: {}
+
+serviceMonitor:
+  enabled: false
+  extraLabels: {}
+  annotations: {}
+#    interval: 15s
+#    scrapeTimeout: 5s
+
+# vmauth configuration:
+# https://victoriametrics.github.io/vmauth.html
+
+# use existing configmap if specified
+# otherwise .config values will be used
+configMap: ""
+
+config:
+  users:
+    - username: "user-insert"
+      password: "changeme"
+      url_prefix: "http://victoria-metrics-victoria-metrics-cluster-vminsert.monitoring.svc.cluster.local:8480"
+    - username: "user-select"
+      password: "changeme"
+      url_prefix: "http://victoria-metrics-victoria-metrics-cluster-vmselect.monitoring.svc.cluster.local:8481"

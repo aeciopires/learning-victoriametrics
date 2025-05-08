@@ -272,3 +272,30 @@ export IP=$(kubectl get ing kube-pires -n myapps -o json | jq -r .status.loadBal
 sudo grep -qxF "$IP  $KUBE_PIRES_DNS" /etc/hosts || sudo sh -c "echo '$IP  $KUBE_PIRES_DNS' >> /etc/hosts"
 #-----------------------------------------------
 
+
+
+#---------------------------------------
+# Install VictoriaMetrics Cluster Mode
+#---------------------------------------
+helm repo add vm https://victoriametrics.github.io/helm-charts/
+
+helm repo update
+
+# Install VictoriaMetrics Cluster Mode
+helm upgrade --install victoria-metrics vm/victoria-metrics-cluster \
+  --namespace monitoring \
+  --create-namespace \
+  --debug=true \
+  --wait \
+  --timeout=900s \
+  -f helm-apps/victoriametrics-cluster-mode/values.yaml
+
+# Install VictoriaMetrics Auth
+helm upgrade --install victoria-metrics-auth vm/victoria-metrics-auth \
+  --namespace monitoring \
+  --create-namespace \
+  --debug=true \
+  --wait \
+  --timeout=900s \
+  -f helm-apps/victoriametrics-auth/values.yaml
+#-----------------------------------------------
