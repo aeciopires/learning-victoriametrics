@@ -1,14 +1,23 @@
+# learning-victoria-metrics
 
+<!-- TOC -->
 
+- [learning-victoria-metrics](#learning-victoria-metrics)
+- [Documentation](#documentation)
 
+<!-- TOC -->
 
-# References
+# Documentation
 
+- https://victoriametrics.com/
+- https://victoriametrics.com/case-studies/
+- https://docs.victoriametrics.com/
+- https://docs.victoriametrics.com/victoriametrics/changelog/
+- https://victoriametrics.com/blog/
+- https://github.com/VictoriaMetrics/VictoriaMetrics
+- https://github.com/VictoriaMetrics/helm-charts
 - https://smarketshq.com/monitoring-kubernetes-clusters-41a4b24c19e3
 - https://victoriametrics.github.io/Cluster-VictoriaMetrics.html
-- https://github.com/VictoriaMetrics/helm-charts
-- https://github.com/VictoriaMetrics/VictoriaMetrics/wiki/CaseStudies
-- https://github.com/VictoriaMetrics/VictoriaMetrics
 - https://medium.com/faun/comparing-thanos-to-victoriametrics-cluster-b193bea1683
 - https://medium.com/@valyala/billy-how-victoriametrics-deals-with-more-than-500-billion-rows-e82ff8f725da
 - https://medium.com/@valyala/evaluating-performance-and-correctness-victoriametrics-response-e27315627e87
