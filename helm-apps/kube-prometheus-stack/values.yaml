@@ -198,6 +198,29 @@ prometheus:
           - prometheus.mycompany.com
 
   prometheusSpec:
+    remoteWrite:
+    - url: "http://victoria-metrics-victoria-metrics-cluster-vminsert.monitoring.svc.cluster.local:8480/insert/0/prometheus/"
+      # Reference: 
+      # https://www.alibabacloud.com/help/doc-detail/114516.htm
+      # https://prometheus.io/docs/practices/remote_write/
+      # https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#remotewritespec
+      # https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#queueconfig
+      remoteTimeout: "60s"
+      queueConfig:
+        # Number of samples to buffer per shard before we start dropping them.
+        capacity: 20000
+        # Maximum number of shards, i.e. amount of concurrency.
+        maxShards: 30
+        # Minimum number of shards.
+        minShards: 5
+        # Maximum number of samples per send.
+        maxSamplesPerSend: 10000
+        # Minimum amount of time to wait before retrying a failed request
+        minBackoff: "10s"
+        # Maximum amount of time to wait before retrying a failed request
+        maxBackoff: "40s"
+      tlsConfig:
+        insecureSkipVerify: true
     image:
       registry: quay.io
       repository: prometheus/prometheus
