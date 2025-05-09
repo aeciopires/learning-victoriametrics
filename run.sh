@@ -175,12 +175,12 @@ else
   kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server --timeout=900s -n argocd
   # Change initial password
   INITIAL_PASS=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-  argocd login --username $ARGOCD_USER --port-forward --port-forward-namespace argocd --insecure --password "$INITIAL_PASS"
-  argocd account update-password --current-password "$INITIAL_PASS" --new-password "$ARGOCD_INITIAL_PASS" --port-forward --port-forward-namespace argocd
+  argocd login --username $ARGOCD_USER --server-name argocd-server --port-forward --port-forward-namespace argocd --plaintext --insecure --password "$INITIAL_PASS"
+  argocd account update-password --server-name argocd-server --current-password "$INITIAL_PASS" --new-password "$ARGOCD_INITIAL_PASS" --port-forward --port-forward-namespace argocd
   kubectl -n argocd delete secret argocd-initial-admin-secret
   # Adding repositories
-  argocd repo add https://github.com/aeciopires/learning-victoriametrics --port-forward --port-forward-namespace argocd
-  argocd repo add https://gitlab.com/aeciopires/kube-pires.git --port-forward --port-forward-namespace argocd
+  argocd repo add https://github.com/aeciopires/learning-victoriametrics --name learning-victoriametrics --type git --project default --server-name argocd-server --port-forward --port-forward-namespace argocd --plaintext --insecure
+  argocd repo add https://gitlab.com/aeciopires/kube-pires.git --name kube-pires --type git --project default  --server-name argocd-server --port-forward --port-forward-namespace argocd --plaintext --insecure
 fi
 #-----------------------------------------------
 
