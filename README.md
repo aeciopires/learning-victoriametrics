@@ -1,5 +1,7 @@
 <!-- TOC -->
 
+- [About](#about)
+- [Use Case](#use-case)
 - [Contributing](#contributing)
 - [VictoriaMetrics documentation](#victoriametrics-documentation)
 - [Requirements](#requirements)
@@ -17,6 +19,31 @@
 - [License](#license)
 
 <!-- TOC -->
+
+# About
+
+
+
+# Use Case
+
+[VictoriaMetrics](https://victoriametrics.com) is a fast, cost-effective and scalable time series database. It can be used as a long-term remote storage for [Prometheus](https://prometheus.io/).
+
+I worked at Sensedia for almost 5 years and used VIctoriaMetrics in production collecting metrics from over 100 clusters (EKS and GKE) running hundreds of pods on each cluster and going through 5 Black Friday without downtime in the monitoring stack.
+
+Details of this use case can be found in the following links:
+
+- [en-US] https://victoriametrics.com/case-studies/sensedia/ 
+- [en-US] https://docs.victoriametrics.com/casestudies/#sensedia 
+- [en-US] https://nordicapis.com/api-monitoring-with-prometheus-grafana-alertmanager-and-victoriametrics/ 
+- [es] https://www.sensedia.com.es/post/seguimiento-con-prometheus-grafana-alertmanager-and-victoriametrics 
+- [pt-BR] https://www.sensedia.com.br/post/monitoramento-de-aplicacoes-com-prometheus-grafana-alertmanager-e-victoriametrics
+- [pt-BR] https://speakerdeck.com/aeciopires/monitoramento-de-aplicacoes-com-prometheus-grafana-alertmanager-e-victoriametrics 
+- Slides (pt-BR): https://speakerdeck.com/aeciopires/monitoramento-de-aplicacoes-com-prometheus-grafana-alertmanager-e-victoriametrics 
+
+I also contribute to the VictoriaMetrics helm chart:
+
+- https://github.com/VictoriaMetrics/helm-charts 
+- https://github.com/VictoriaMetrics/helm-charts/graphs/contributors
 
 # Contributing
 
