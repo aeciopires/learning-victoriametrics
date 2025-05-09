@@ -38,6 +38,9 @@
 - https://grafana.com/grafana/dashboards/11040
 - https://grafana.com/grafana/dashboards/11039
 - https://grafana.com/grafana/dashboards/11038
+- https://grafana.com/grafana/dashboards/11176
+- https://grafana.com/grafana/dashboards/21394
+- https://grafana.com/grafana/dashboards/11831 
 - https://github.com/VictoriaMetrics/helm-charts/tree/master/charts/victoria-metrics-single
 - https://github.com/VictoriaMetrics/VictoriaMetrics/wiki/Single-server-VictoriaMetrics
 - https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write

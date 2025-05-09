@@ -7,8 +7,8 @@
   - [VictoriaMetrics Cluster Mode](#victoriametrics-cluster-mode)
   - [argocd](#argocd)
   - [ingress-nginx](#ingress-nginx)
-  - [certificate-manager](#certificate-manager)
-  - [kube-stack-prometheus](#kube-stack-prometheus)
+  - [cert-manager](#cert-manager)
+  - [kube-prometheus-stack](#kube-prometheus-stack)
   - [kube-pires](#kube-pires)
 - [Tools used](#tools-used)
 - [Request workflow](#request-workflow)
@@ -48,7 +48,7 @@ Actions performed:
 
 ## VictoriaMetrics Cluster Mode
 
-See the [helm-apps/victoriametrics-cluster-mode/README.md](victoriametrics-cluster-mode/README.md) file to configure VictoriaMetrics cluster mode.
+See the [helm-apps/victoriametrics-cluster-mode/README.md](helm-apps/victoriametrics-cluster-mode/README.md) file to configure VictoriaMetrics cluster mode.
 
 ## argocd
 
@@ -58,13 +58,13 @@ See the [helm-apps/argocd/README.md](helm-apps/argocd/README.md)
 
 See the [helm-apps/ingress-nginx/README.md](helm-apps/ingress-nginx/README.md)
 
-## certificate-manager
+## cert-manager
 
-See the [helm-apps/certificate-manager/README.md](helm-apps/certificate-manager/README.md)
+See the [helm-apps/cert-manager/README.md](helm-apps/cert-manager/README.md)
 
-## kube-stack-prometheus
+## kube-prometheus-stack
 
-See the [helm-apps/kube-stack-prometheus/README.md](helm-apps/kube-stack-prometheus/README.md)
+See the [helm-apps/kube-stack-prometheus/README.md](helm-apps/kube-prometheus-stack/README.md)
 
 ## kube-pires
 
