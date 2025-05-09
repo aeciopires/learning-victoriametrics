@@ -108,15 +108,15 @@ Open the browser and access the URL: https://grafana.mycompany.com/
 - **login**: admin
 - **password**: prom-operator
 
-Reference: https://dev.to/rayandasoriya/comment/dckk
-
 Dashboards to import:
 
-- [../kube-pires/kube-pires-dashboard.json](../kube-pires/kube-pires-dashboard.json)
-- https://grafana.com/grafana/dashboards/10229
-- https://grafana.com/grafana/dashboards/11040
-- https://grafana.com/grafana/dashboards/11039
-- https://grafana.com/grafana/dashboards/11038
+- [../kube-pires/kube-pires-dashboard.json](../kube-pires/kube-pires-dashboard.json) ( (select the prometheus datasource))
+- https://grafana.com/grafana/dashboards/11040 (select the VictoriaMetrics datasource)
+- https://grafana.com/grafana/dashboards/11039 (select the VictoriaMetrics datasource)
+- https://grafana.com/grafana/dashboards/11038 (select the VictoriaMetrics datasource)
+- https://grafana.com/grafana/dashboards/11176 (select the VictoriaMetrics datasource)
+- https://grafana.com/grafana/dashboards/21394 (select the VictoriaMetrics datasource)
+- https://grafana.com/grafana/dashboards/11831 (select the VictoriaMetrics datasource)
 
 # References
 
