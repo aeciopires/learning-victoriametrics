@@ -5,6 +5,7 @@
 - [Requirements](#requirements)
 - [Create cluster and deploy applications](#create-cluster-and-deploy-applications)
   - [VictoriaMetrics Cluster Mode](#victoriametrics-cluster-mode)
+  - [argocd](#argocd)
   - [ingress-nginx](#ingress-nginx)
   - [certificate-manager](#certificate-manager)
   - [kube-stack-prometheus](#kube-stack-prometheus)
@@ -48,6 +49,10 @@ Actions performed:
 ## VictoriaMetrics Cluster Mode
 
 See the [helm-apps/victoriametrics-cluster-mode/README.md](victoriametrics-cluster-mode/README.md) file to configure VictoriaMetrics cluster mode.
+
+## argocd
+
+See the [helm-apps/argocd/README.md](helm-apps/argocd/README.md)
 
 ## ingress-nginx
 
