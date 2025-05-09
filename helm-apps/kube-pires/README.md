@@ -18,6 +18,8 @@
 
 If needs add entry in ``/etc/hosts`` file:
 
+> ATTENTION!!! You must be connected to the kind cluster
+
 ```bash
 # Add entry in /etc/hosts for kube-pires
 export IP=$(kubectl get ing kube-pires -n myapps -o json | jq -r .status.loadBalancer.ingress[].ip)

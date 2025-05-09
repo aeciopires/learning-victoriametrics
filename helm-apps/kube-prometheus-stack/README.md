@@ -19,13 +19,17 @@
 
 # Accessing Prometheus
 
-Use command follow to access Prometheus:
+If needs add entry in ``/etc/hosts`` file:
+
+> ATTENTION!!! You must be connected to the kind cluster
 
 ```bash
-kubectl port-forward svc/monitor-mycompany-prometheus -n monitoring 9090:9090
+kubectl wait --for=create ingress/monitor-mycompany-prometheus --timeout=900s -n monitoring
+export IP=$(kubectl get ing monitor-mycompany-prometheus -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  prometheus.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  prometheus.mycompany.com' >> /etc/hosts"
 ```
 
-Access your web navigator in URL http://localhost:9090
+Open the browser and access the URL: https://prometheus.mycompany.com/
 
 # Troubleshooting of Prometheus installation
 
@@ -75,32 +79,34 @@ More informations about Throubleshooting in Prometheus-Operator are available [i
 
 # Accessing AlertManager
 
-If deploy alertmanager is defined with value ``true`` in file ``install_prometheus-operator_k8s/helm_vars/values.yaml``, then use command follow to access AlertManager:
+If needs add entry in ``/etc/hosts`` file:
+
+> ATTENTION!!! You must be connected to the kind cluster
 
 ```bash
-kubectl port-forward svc/alertmanager-operated -n monitoring 9093:9093
+kubectl wait --for=create ingress/monitor-mycompany-alertmanager --timeout=900s -n monitoring
+export IP=$(kubectl get ing monitor-mycompany-alertmanager -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  alertmanager.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  alertmanager.mycompany.com' >> /etc/hosts"
 ```
 
-Access your web navigator in URL http://localhost:9093
+Open the browser and access the URL: https://alertmanager.mycompany.com/
 
 # Accessing Grafana
 
-If deploy grafana is defined with value ``true`` in file ``install_prometheus-operator_k8s/helm_vars/values.yaml``, then use command follow to access Grafana:
+If needs add entry in ``/etc/hosts`` file:
+
+> ATTENTION!!! You must be connected to the kind cluster
 
 ```bash
-kubectl port-forward svc/monitor-grafana 3000:80 -n monitoring
+kubectl wait --for=create ingress/monitor-grafana --timeout=900s -n monitoring
+export IP=$(kubectl get ing monitor-grafana -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  grafana.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  grafana.mycompany.com' >> /etc/hosts"
 ```
 
-Access your web navigator in URL http://localhost:3000
+Open the browser and access the URL: https://grafana.mycompany.com/
 
 - **login**: admin
 - **password**: prom-operator
-
-To edit password default of Grafana, edit secrets of Grafana of Prometheus Operator:
-
-```bash
-kubectl edit secrets monitor-grafana -n monitoring
-```
 
 Reference: https://dev.to/rayandasoriya/comment/dckk
 
@@ -111,7 +117,6 @@ Dashboards to import:
 - https://grafana.com/grafana/dashboards/11040
 - https://grafana.com/grafana/dashboards/11039
 - https://grafana.com/grafana/dashboards/11038
-
 
 # References
 

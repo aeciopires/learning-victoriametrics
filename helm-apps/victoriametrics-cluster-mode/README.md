@@ -40,14 +40,30 @@ Each service may scale independently and may run on the most suitable hardware. 
 
 ## vmui
 
-VictoriaMetrics cluster version provides UI for query troubleshooting and exploration. The UI is available at ``http://<vmselect>:8481/select/<accountID>/vmui/`` in each vmeselect service. The UI allows exploring query results via graphs and tables. See more details about vmui.
-Multitenancy
+VictoriaMetrics cluster version provides UI for query troubleshooting and exploration. The UI allows exploring query results via graphs and tables.
+
+If needs add entry in ``/etc/hosts`` file:
+
+> ATTENTION!!! You must be connected to the kind cluster
+
+```bash
+kubectl wait --for=create ingress/victoria-metrics-victoria-metrics-cluster-vmauth --timeout=900s -n monitoring
+export IP=$(kubectl get ing victoria-metrics-victoria-metrics-cluster-vmauth -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  victoriametrics-cluster.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  victoriametrics-cluster.mycompany.com' >> /etc/hosts"
+```
+
+- URL: https://victoriametrics-cluster.mycompany.com/select/0/vmui/
+- Login: user-select
+- password: changeme
 
 ## vmauth
 
-**vmauth** is an HTTP proxy, which can authorize, route and load balance 
-requests across VictoriaMetrics components or any other HTTP backends.
+**vmauth** is an HTTP proxy, which can authorize, route and load balance requests across VictoriaMetrics components or any other HTTP backends.
 Reference: https://docs.victoriametrics.com/victoriametrics/vmauth/
+
+- URL: https://victoriametrics-cluster.mycompany.com/
+- Login: user-select
+- password: changeme
 
 # Troubleshooting
 

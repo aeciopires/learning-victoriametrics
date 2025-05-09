@@ -24,6 +24,8 @@ kubectl get all -n argocd
 
 If needs add entry in ``/etc/hosts`` file:
 
+> ATTENTION!!! You must be connected to the kind cluster
+
 ```bash
 # Add entry in /etc/hosts for argocd
 export IP=$(kubectl get ing argocd -n argocd -o json | jq -r .status.loadBalancer.ingress[].ip)
