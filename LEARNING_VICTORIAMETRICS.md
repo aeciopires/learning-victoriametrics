@@ -10,6 +10,7 @@
 # Documentation
 
 - https://victoriametrics.com/
+- https://victoriametrics.com/blog/victoriametrics-getting-started/
 - https://victoriametrics.com/case-studies/
 - https://docs.victoriametrics.com/
 - https://docs.victoriametrics.com/victoriametrics/changelog/
