@@ -42,7 +42,6 @@ up:
 
 down:
 	make requirements
-	kill $$(jobs -p -r)
 	kind delete clusters ${CLUSTER_NAME}
 
 .ONESHELL:

@@ -170,13 +170,17 @@ else
     --timeout=900s \
     -f helm-apps/argocd/values.yaml
 
-  # Configure ArgoCD
+  # Waiting creation some ArgoCD resources
+  kubectl wait --for=create secret/argocd-initial-admin-secret --timeout=900s -n argocd
+  kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server --timeout=900s -n argocd
   # Change initial password
   INITIAL_PASS=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
   argocd login --username $ARGOCD_USER --port-forward --port-forward-namespace argocd --insecure --password "$INITIAL_PASS"
   argocd account update-password --current-password "$INITIAL_PASS" --new-password "$ARGOCD_INITIAL_PASS" --port-forward --port-forward-namespace argocd
   kubectl -n argocd delete secret argocd-initial-admin-secret
+  # Adding repositories
   argocd repo add https://github.com/aeciopires/learning-victoriametrics --port-forward --port-forward-namespace argocd
+  argocd repo add https://gitlab.com/aeciopires/kube-pires.git --port-forward --port-forward-namespace argocd
 fi
 #-----------------------------------------------
 
@@ -190,7 +194,7 @@ fi
 kubectl -n argocd apply -f helm-apps/ingress-nginx/application.yaml
 
 # certificate-manager
-kubectl -n argocd apply -f helm-apps/certificate-manager/application.yaml
+kubectl -n argocd apply -f helm-apps/cert-manager/application.yaml
 # Creating a ClusterIssuer
 if [ ! -f "$CERT_MANAGER_CLUSTER_ISSUE_FILE" ]; then
 
@@ -220,14 +224,10 @@ echo "[INFO] Waiting for install cert-manager"
 cmctl check api --wait=5m
 kubectl apply -f "$CERT_MANAGER_CLUSTER_ISSUE_FILE"
 
-# kube-pires
-kubectl -n argocd apply -f helm-apps/kube-pires/application.yaml
-
 # victoria-metrics cluster-mode
 kubectl -n argocd apply -f helm-apps/victoriametrics-cluster-mode/application.yaml
 
-# kube-prometheus-stack
-# Install CRDs
+# Install CRDs prometheus
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagerconfigs.yaml"
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagers.yaml"
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml"
@@ -239,8 +239,11 @@ kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-ope
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml"
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_thanosrulers.yaml"
 
+# kube-prometheus-stack
 kubectl -n argocd apply -f helm-apps/kube-prometheus-stack/application.yaml
 
+# kube-pires
+kubectl -n argocd apply -f helm-apps/kube-pires/application.yaml
 
 # Add entry in /etc/hosts for kube-pires
 kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service/kube-pires --timeout=900s -n myapps
@@ -249,6 +252,6 @@ sudo grep -qxF "$IP  $KUBE_PIRES_DNS" /etc/hosts || sudo sh -c "echo '$IP  $KUBE
 
 # Add entry in /etc/hosts for argocd
 kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service/argocd-server --timeout=900s -n argocd
-export IP=$(kubectl get ing argocd -n myapps -o json | jq -r .status.loadBalancer.ingress[].ip)
+export IP=$(kubectl get ing argocd-server -n argocd -o json | jq -r .status.loadBalancer.ingress[].ip)
 sudo grep -qxF "$IP  $ARGOCD_DNS" /etc/hosts || sudo sh -c "echo '$IP  $ARGOCD_DNS' >> /etc/hosts"
 #-----------------------------------------------
