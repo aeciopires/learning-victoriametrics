@@ -61,3 +61,6 @@ Add gitlab repository using this informations:
 - https://blog.aeciopires.com/usando-o-argo-cd-para-implementar-a-abordagem-gitops-nos-clusters-kubernetes/
 - https://argo-cd.readthedocs.io/en/stable/
 - https://argo-cd.readthedocs.io/en/stable/user-guide/private-repositories/
+- https://argo-cd.readthedocs.io/en/latest/operator-manual/ingress/
+- https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
+- https://argo-cd.readthedocs.io/en/stable/user-guide/multiple_sources/

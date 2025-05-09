@@ -6,6 +6,7 @@
 
 #------------------------
 # Variables
+DOMAIN_NAME="mycompany.com"
 CLUSTER_NAME="kind-multinodes"
 KIND_CLUSTER_FILE="/tmp/kind-cluster.yaml"
 METALLB_CHART_VERSION="0.14.9"
@@ -14,9 +15,13 @@ CERT_MANAGER_CLUSTER_ISSUE_FILE="/tmp/cert-cluster-issue.yaml"
 ARGOCD_CHART_VERSION="8.0.0"
 ARGOCD_USER="admin"
 ARGOCD_INITIAL_PASS="changeme"
-ARGOCD_DNS="argocd.mycompany.com"
+ARGOCD_DNS="argocd.${DOMAIN_NAME}"
 KUBE_PROMETHEUS_STACK_VERSION="v0.82.0"
-KUBE_PIRES_DNS="kube-pires.mycompany.com"
+KUBE_PIRES_DNS="kube-pires.${DOMAIN_NAME}"
+ALERTMANAGER_DNS="alertmanager.${DOMAIN_NAME}"
+GRAFANA_DNS="grafana.${DOMAIN_NAME}"
+PROMETHEUS_DNS="prometheus.${DOMAIN_NAME}"
+VICTORIAMETRICS_CLUSTER_MODE_DNS="victoriametrics-cluster.${DOMAIN_NAME}"
 #------------------------
 
 
@@ -246,12 +251,36 @@ kubectl -n argocd apply -f helm-apps/kube-prometheus-stack/application.yaml
 kubectl -n argocd apply -f helm-apps/kube-pires/application.yaml
 
 # Add entry in /etc/hosts for kube-pires
-kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service/kube-pires --timeout=900s -n myapps
+kubectl wait --for=create ingress/kube-pires --timeout=900s -n myapps
 export IP=$(kubectl get ing kube-pires -n myapps -o json | jq -r .status.loadBalancer.ingress[].ip)
 sudo grep -qxF "$IP  $KUBE_PIRES_DNS" /etc/hosts || sudo sh -c "echo '$IP  $KUBE_PIRES_DNS' >> /etc/hosts"
 
 # Add entry in /etc/hosts for argocd
-kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service/argocd-server --timeout=900s -n argocd
+kubectl wait --for=create ingress/argocd-server --timeout=900s -n argocd
 export IP=$(kubectl get ing argocd-server -n argocd -o json | jq -r .status.loadBalancer.ingress[].ip)
 sudo grep -qxF "$IP  $ARGOCD_DNS" /etc/hosts || sudo sh -c "echo '$IP  $ARGOCD_DNS' >> /etc/hosts"
+
+
+# Add entry in /etc/hosts for alertmanager
+kubectl wait --for=create ingress/monitor-mycompany-alertmanager --timeout=900s -n monitoring
+export IP=$(kubectl get ing monitor-mycompany-alertmanager -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  $ALERTMANAGER_DNS" /etc/hosts || sudo sh -c "echo '$IP  $ALERTMANAGER_DNS' >> /etc/hosts"
+
+
+# Add entry in /etc/hosts for grafana
+kubectl wait --for=create ingress/monitor-grafana --timeout=900s -n monitoring
+export IP=$(kubectl get ing monitor-grafana -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  $GRAFANA_DNS" /etc/hosts || sudo sh -c "echo '$IP  $GRAFANA_DNS' >> /etc/hosts"
+
+
+# Add entry in /etc/hosts for prometheus
+kubectl wait --for=create ingress/monitor-mycompany-prometheus --timeout=900s -n monitoring
+export IP=$(kubectl get ing monitor-mycompany-prometheus -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  $PROMETHEUS_DNS" /etc/hosts || sudo sh -c "echo '$IP  $PROMETHEUS_DNS' >> /etc/hosts"
+
+
+# Add entry in /etc/hosts for victoriametrics-cluster-mode
+kubectl wait --for=create ingress/victoria-metrics-victoria-metrics-cluster-vmauth --timeout=900s -n monitoring
+export IP=$(kubectl get ing victoria-metrics-victoria-metrics-cluster-vmauth -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  $VICTORIAMETRICS_CLUSTER_MODE_DNS" /etc/hosts || sudo sh -c "echo '$IP  $VICTORIAMETRICS_CLUSTER_MODE_DNS' >> /etc/hosts"
 #-----------------------------------------------

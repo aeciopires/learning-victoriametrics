@@ -14,10 +14,81 @@ defaultRules:
 ## Alertmanager
 alertmanager:
   enabled: true
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      #--- Annotations to use nginx-ingress
+      kubernetes.io/ingress.class: "nginx"
+      nginx.ingress.kubernetes.io/rewrite-target: / # URL redirection
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true" # Force redirect to HTTPS
+      nginx.ingress.kubernetes.io/ssl-redirect: "true" # SSL redirection enabled
+      #--- Optional Annotation for cert-manager
+      cert-manager.io/cluster-issuer: "letsencrypt-prod-http01" # Using Let's Encrypt for the certificate
+    hosts:
+      - alertmanager.mycompany.com
+    ## Paths to use for ingress rules - one path should match the alertmanagerSpec.routePrefix
+    ##
+    paths:
+      - /
+    ## For Kubernetes >= 1.18 you should specify the pathType (determines how Ingress paths should be matched)
+    ## See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#better-path-matching-with-path-types
+    pathType: Prefix
+    ## TLS configuration for Alertmanager Ingress
+    ## Secret must be manually created in the namespace
+    ##
+    tls:
+      - secretName: alermanager-tls-secret
+        hosts:
+          - alermanager.mycompany.com
 
 ## Grafana
 grafana:
   enabled: true
+  ingress:
+    ## If true, Grafana Ingress will be created
+    ##
+    enabled: true
+
+    ## IngressClassName for Grafana Ingress.
+    ## Should be provided if Ingress is enable.
+    ##
+    # ingressClassName: nginx
+
+    ## Annotations for Grafana Ingress
+    ##
+    annotations:
+      #--- Annotations to use nginx-ingress
+      kubernetes.io/ingress.class: "nginx"
+      nginx.ingress.kubernetes.io/rewrite-target: / # URL redirection
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true" # Force redirect to HTTPS
+      nginx.ingress.kubernetes.io/ssl-redirect: "true" # SSL redirection enabled
+      #--- Optional Annotation for cert-manager
+      cert-manager.io/cluster-issuer: "letsencrypt-prod-http01" # Using Let's Encrypt for the certificate
+
+    ## Labels to be added to the Ingress
+    ##
+    labels: {}
+
+    ## Hostnames.
+    ## Must be provided if Ingress is enable.
+    ##
+    # hosts:
+    #   - grafana.domain.com
+    hosts:
+      - grafana.mycompany.com
+
+    ## Path for grafana ingress
+    path: /
+
+    ## TLS configuration for grafana Ingress
+    ## Secret must be manually created in the namespace
+    ##
+    tls:
+      - secretName: grafana-tls-secret
+        hosts:
+          - grafana.mycompany.com
+
 
 ## Exporters
 kubernetesServiceMonitors:
@@ -69,6 +140,50 @@ prometheusOperator:
 ## Prometheus
 prometheus:
   enabled: true
+  ingress:
+    enabled: true
+
+    # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
+    # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
+    # ingressClassName: nginx
+
+    annotations:
+      #--- Annotations to use nginx-ingress
+      kubernetes.io/ingress.class: "nginx"
+      nginx.ingress.kubernetes.io/rewrite-target: / # URL redirection
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true" # Force redirect to HTTPS
+      nginx.ingress.kubernetes.io/ssl-redirect: "true" # SSL redirection enabled
+      #--- Optional Annotation for cert-manager
+      cert-manager.io/cluster-issuer: "letsencrypt-prod-http01" # Using Let's Encrypt for the certificate
+    labels: {}
+
+    ## Redirect ingress to an additional defined port on the service
+    # servicePort: 8081
+
+    ## Hostnames.
+    ## Must be provided if Ingress is enabled.
+    ##
+    # hosts:
+    #   - prometheus.domain.com
+    hosts:
+      - prometheus.mycompany.com
+
+    ## Paths to use for ingress rules - one path should match the prometheusSpec.routePrefix
+    ##
+    paths:
+      - /
+
+    ## For Kubernetes >= 1.18 you should specify the pathType (determines how Ingress paths should be matched)
+    ## See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#better-path-matching-with-path-types
+    # pathType: ImplementationSpecific
+
+    ## TLS configuration for Prometheus Ingress
+    ## Secret must be manually created in the namespace
+    ##
+    tls:
+      - secretName: prometheus-tls-secret
+        hosts:
+          - prometheus.mycompany.com
 
   prometheusSpec:
     image:
