@@ -50,13 +50,9 @@ grafana:
   - name: VictoriaMetrics
     type: prometheus
     access: direct
-    basicAuth: true
-    secureJsonData:
-        basicAuthPassword: changeme
-    basicAuthUser: user-select
     editable: true
     jsonData:
-        tlsSkipVerify: true
+      tlsSkipVerify: true
     orgId: 1
     url: http://victoria-metrics-victoria-metrics-cluster-vmselect.monitoring.svc.cluster.local:8481/select/0/prometheus/
     version: 1
