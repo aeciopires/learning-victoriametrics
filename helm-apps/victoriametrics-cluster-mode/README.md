@@ -6,6 +6,7 @@
 - [Requirements](#requirements)
 - [Architecture](#architecture)
   - [vmui](#vmui)
+  - [vmauth](#vmauth)
 - [Troubleshooting](#troubleshooting)
 - [Write API](#write-api)
   - [Read API](#read-api)
@@ -41,6 +42,12 @@ Each service may scale independently and may run on the most suitable hardware. 
 
 VictoriaMetrics cluster version provides UI for query troubleshooting and exploration. The UI is available at ``http://<vmselect>:8481/select/<accountID>/vmui/`` in each vmeselect service. The UI allows exploring query results via graphs and tables. See more details about vmui.
 Multitenancy
+
+## vmauth
+
+**vmauth** is an HTTP proxy, which can authorize, route and load balance 
+requests across VictoriaMetrics components or any other HTTP backends.
+Reference: https://docs.victoriametrics.com/victoriametrics/vmauth/
 
 # Troubleshooting
 

@@ -10,12 +10,13 @@ CLUSTER_NAME="kind-multinodes"
 KIND_CLUSTER_FILE="/tmp/kind-cluster.yaml"
 METALLB_CHART_VERSION="0.14.9"
 METALLB_FILE="/tmp/metallb-ingress-address.yaml"
-INGRESS_NGINX_VERSION='4.12.2'
-CERT_MANAGER_VERSION='v1.17.2'
+INGRESS_NGINX_CHART_VERSION='4.12.2'
+CERT_MANAGER_CHART_VERSION='v1.17.2'
 CERT_MANAGER_CLUSTER_ISSUE_FILE="/tmp/cert-cluster-issue.yaml"
 KUBE_PROMETHEUS_CHART_VERSION="72.2.0"
 KUBE_PROMETHEUS_STACK_VERSION="v0.82.0"
 KUBE_PIRES_DNS="kube-pires.mycompany.com"
+VICTORIAMETRICS_CLUSTER_CHART_VERSION="0.21.0"
 #------------------------
 
 
@@ -79,7 +80,7 @@ fi
 
 
 #---------------------------------------
-# Install Metallb
+# Install MetalLB
 #---------------------------------------
 
 if helm status metallb -n metallb-system >/dev/null 2>&1; then
@@ -96,9 +97,9 @@ else
 
   # Install MetalLB and check if it is installed
   helm upgrade --install metallb metallb/metallb \
+    --version "$METALLB_CHART_VERSION" \
     --namespace metallb-system \
     --create-namespace \
-    --version "$METALLB_CHART_VERSION" \
     --debug=true \
     --wait \
     --timeout=900s \
@@ -158,7 +159,7 @@ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
 
 helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-  --version "$INGRESS_NGINX_VERSION" \
+  --version "$INGRESS_NGINX_CHART_VERSION" \
   --namespace ingress-nginx \
   --create-namespace \
   --debug=true \
@@ -177,14 +178,14 @@ helm repo add jetstack https://charts.jetstack.io
 
 helm repo update
 
-helm upgrade --install \
-  cert-manager jetstack/cert-manager \
+helm upgrade --install cert-manager jetstack/cert-manager \
+  --version "$CERT_MANAGER_CHART_VERSION" \
   --namespace cert-manager \
   --create-namespace \
   --debug=true \
   --wait \
   --timeout=900s \
-  --version "$CERT_MANAGER_VERSION" --set global.leaderElection.namespace=cert-manager --set crds.enabled=true
+  --set global.leaderElection.namespace=cert-manager --set crds.enabled=true
 
 # Creating a ClusterIssuer
 if [ ! -f "$CERT_MANAGER_CLUSTER_ISSUE_FILE" ]; then
@@ -241,9 +242,9 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 
 helm repo update
 
-helm upgrade --install prometheus-community/kube-prometheus-stack \
-  --namespace monitoring \
+helm upgrade --install monitor prometheus-community/kube-prometheus-stack \
   --version "$KUBE_PROMETHEUS_CHART_VERSION" \
+  --namespace monitoring \
   --create-namespace \
   --debug=true \
   --wait \
@@ -283,19 +284,11 @@ helm repo update
 
 # Install VictoriaMetrics Cluster Mode
 helm upgrade --install victoria-metrics vm/victoria-metrics-cluster \
+  --version "$VICTORIAMETRICS_CLUSTER_CHART_VERSION" \
   --namespace monitoring \
   --create-namespace \
   --debug=true \
   --wait \
   --timeout=900s \
   -f helm-apps/victoriametrics-cluster-mode/values.yaml
-
-# Install VictoriaMetrics Auth
-helm upgrade --install victoria-metrics-auth vm/victoria-metrics-auth \
-  --namespace monitoring \
-  --create-namespace \
-  --debug=true \
-  --wait \
-  --timeout=900s \
-  -f helm-apps/victoriametrics-auth/values.yaml
 #-----------------------------------------------
