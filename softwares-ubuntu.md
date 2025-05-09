@@ -4,6 +4,7 @@
   - [Essential](#essential)
   - [Optionals](#optionals)
 - [asdf](#asdf)
+- [argocd-cli](#argocd-cli)
 - [docker](#docker)
 - [Go](#go)
 - [cmctl](#cmctl)
@@ -11,7 +12,6 @@
 - [helm-diff - Plugin](#helm-diff---plugin)
 - [helm-secrets - Plugin](#helm-secrets---plugin)
 - [kubectl](#kubectl)
-- [kubefwd](#kubefwd)
 - [kind](#kind)
 
 <!-- TOC -->
@@ -83,6 +83,25 @@ source ~/.bashrc
 
 Reference: https://asdf-vm.com/guide/introduction.html
 
+# argocd-cli
+
+Install ``argocd-cli`` using ``asdf``:
+
+> Before proceeding, make sure you have installed the command [asdf](#asdf).
+
+```bash
+VERSION=3.0.0
+asdf plugin-add argocd https://github.com/beardix/asdf-argocd.git
+asdf list all argocd
+asdf install argocd $VERSION
+asdf global argocd $VERSION
+```
+
+References:
+- https://argo-cd.readthedocs.io/en/stable/
+- https://github.com/beardix/asdf-argocd
+- http://blog.aeciopires.com/usando-o-argo-cd-para-implementar-a-abordagem-gitops-nos-clusters-kubernetes/
+
 # docker
 
 Install Docker CE (Community Edition) following the instructions on the page: <https://docs.docker.com/engine/install/ubuntu/>.
@@ -105,7 +124,7 @@ Run the following commands to install Go.
 Reference: https://golang.org/doc/
 
 ```bash
-VERSION=1.24.2
+VERSION=1.24.3
 
 mkdir -p $HOME/go/bin
 cd /tmp
@@ -203,25 +222,6 @@ asdf global kubectl $VERSION_OPTION_1
 asdf list kubectl
 
 sudo ln -s $HOME/.asdf/shims/kubectl /usr/local/bin/kubectl
-```
-
-# kubefwd
-
-References:
-- https://github.com/txn2/kubefwd
-- https://imti.co/kubernetes-port-forwarding
-- https://kubefwd.com
-
-Run the following commands.
-
-```bash
-VERSION=1.22.5
-
-wget https://github.com/txn2/kubefwd/releases/download/$VERSION/kubefwd_amd64.deb
-sudo dpkg -i kubefwd_amd64.deb
-rm kubefwd_amd64.deb
-
-kubefwd version
 ```
 
 # kind

@@ -35,7 +35,7 @@ Create kind cluster and install helm apps using ``make`` command:
 
 ```bash
 cd learning-victoriametrics
-make vm-cluster-mode
+make up
 ```
 
 Actions performed:

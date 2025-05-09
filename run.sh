@@ -1,8 +1,8 @@
 #!/bin/bash
-# Uncomment before line if use Ubuntu
+# if use Ubuntu
 
 #!/opt/homebrew/bin/bash
-# Uncomment before line if use MacOS with brew
+# if use MacOS with brew
 
 #------------------------
 # Variables
@@ -10,13 +10,13 @@ CLUSTER_NAME="kind-multinodes"
 KIND_CLUSTER_FILE="/tmp/kind-cluster.yaml"
 METALLB_CHART_VERSION="0.14.9"
 METALLB_FILE="/tmp/metallb-ingress-address.yaml"
-INGRESS_NGINX_CHART_VERSION='4.12.2'
-CERT_MANAGER_CHART_VERSION='v1.17.2'
 CERT_MANAGER_CLUSTER_ISSUE_FILE="/tmp/cert-cluster-issue.yaml"
-KUBE_PROMETHEUS_CHART_VERSION="72.2.0"
+ARGOCD_CHART_VERSION="8.0.0"
+ARGOCD_USER="admin"
+ARGOCD_INITIAL_PASS="changeme"
+ARGOCD_DNS="argocd.mycompany.com"
 KUBE_PROMETHEUS_STACK_VERSION="v0.82.0"
 KUBE_PIRES_DNS="kube-pires.mycompany.com"
-VICTORIAMETRICS_CLUSTER_CHART_VERSION="0.21.0"
 #------------------------
 
 
@@ -80,7 +80,7 @@ fi
 
 
 #---------------------------------------
-# Install MetalLB
+# Install MetalLB without ArgoCD
 #---------------------------------------
 
 if helm status metallb -n metallb-system >/dev/null 2>&1; then
@@ -150,43 +150,47 @@ kubectl apply -f "$METALLB_FILE" --namespace metallb-system
 #-----------------------------------------------
 
 
-
 #---------------------------------------
-# Install ingress-nginx
+# Install ArgoCD
 #---------------------------------------
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 
-helm repo update
+if helm status argocd -n argocd >/dev/null 2>&1; then
+  echo "[WARNING] Helm release argocd exists in namespace argocd."
+else
+  helm repo add argo https://argoproj.github.io/argo-helm
 
-helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-  --version "$INGRESS_NGINX_CHART_VERSION" \
-  --namespace ingress-nginx \
-  --create-namespace \
-  --debug=true \
-  --wait \
-  --timeout=900s \
-  -f helm-apps/ingress-nginx/values.yaml
+  helm repo update
+
+  helm upgrade --install argocd argo/argo-cd \
+    --version "$ARGOCD_CHART_VERSION" \
+    --namespace argocd \
+    --create-namespace \
+    --debug=true \
+    --wait \
+    --timeout=900s \
+    -f helm-apps/argocd/values.yaml
+
+  # Configure ArgoCD
+  # Change initial password
+  INITIAL_PASS=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+  argocd login --username $ARGOCD_USER --port-forward --port-forward-namespace argocd --insecure --password "$INITIAL_PASS"
+  argocd account update-password --current-password "$INITIAL_PASS" --new-password "$ARGOCD_INITIAL_PASS" --port-forward --port-forward-namespace argocd
+  kubectl -n argocd delete secret argocd-initial-admin-secret
+  argocd repo add https://github.com/aeciopires/learning-victoriametrics --port-forward --port-forward-namespace argocd
+fi
 #-----------------------------------------------
 
 
 
-
 #---------------------------------------
-# Install certificate-manager
+# Install/Sync other apps using ArgoCD
 #---------------------------------------
-helm repo add jetstack https://charts.jetstack.io
 
-helm repo update
+# ingress-nginx
+kubectl -n argocd apply -f helm-apps/ingress-nginx/application.yaml
 
-helm upgrade --install cert-manager jetstack/cert-manager \
-  --version "$CERT_MANAGER_CHART_VERSION" \
-  --namespace cert-manager \
-  --create-namespace \
-  --debug=true \
-  --wait \
-  --timeout=900s \
-  --set global.leaderElection.namespace=cert-manager --set crds.enabled=true
-
+# certificate-manager
+kubectl -n argocd apply -f helm-apps/certificate-manager/application.yaml
 # Creating a ClusterIssuer
 if [ ! -f "$CERT_MANAGER_CLUSTER_ISSUE_FILE" ]; then
 
@@ -215,16 +219,14 @@ echo "[INFO] Waiting for install cert-manager"
 # Reference: https://cert-manager.io/v1.7-docs/installation/verify/
 cmctl check api --wait=5m
 kubectl apply -f "$CERT_MANAGER_CLUSTER_ISSUE_FILE"
-#-----------------------------------------------
 
+# kube-pires
+kubectl -n argocd apply -f helm-apps/kube-pires/application.yaml
 
+# victoria-metrics cluster-mode
+kubectl -n argocd apply -f helm-apps/victoriametrics-cluster-mode/application.yaml
 
-
-
-#---------------------------------------
-# Install kube-prometheus-stack
-#---------------------------------------
-
+# kube-prometheus-stack
 # Install CRDs
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagerconfigs.yaml"
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagers.yaml"
@@ -237,58 +239,16 @@ kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-ope
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml"
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_thanosrulers.yaml"
 
-# Install kube-prometheus-stack
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+kubectl -n argocd apply -f helm-apps/kube-prometheus-stack/application.yaml
 
-helm repo update
-
-helm upgrade --install monitor prometheus-community/kube-prometheus-stack \
-  --version "$KUBE_PROMETHEUS_CHART_VERSION" \
-  --namespace monitoring \
-  --create-namespace \
-  --debug=true \
-  --wait \
-  --timeout=900s \
-  -f helm-apps/kube-prometheus-stack/values.yaml
-#-----------------------------------------------
-
-
-
-
-#---------------------------------------
-# Install kube-pires
-#---------------------------------------
-git clone https://gitlab.com/aeciopires/kube-pires /tmp/kube-pires
-
-helm upgrade --install kube-pires /tmp/kube-pires/helm-chart \
-  --namespace myapps \
-  --create-namespace \
-  --debug=true \
-  --wait \
-  --timeout=900s \
-  -f helm-apps/kube-pires/values.yaml
 
 # Add entry in /etc/hosts for kube-pires
+kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service/kube-pires --timeout=900s -n myapps
 export IP=$(kubectl get ing kube-pires -n myapps -o json | jq -r .status.loadBalancer.ingress[].ip)
 sudo grep -qxF "$IP  $KUBE_PIRES_DNS" /etc/hosts || sudo sh -c "echo '$IP  $KUBE_PIRES_DNS' >> /etc/hosts"
-#-----------------------------------------------
 
-
-
-#---------------------------------------
-# Install VictoriaMetrics Cluster Mode
-#---------------------------------------
-helm repo add vm https://victoriametrics.github.io/helm-charts/
-
-helm repo update
-
-# Install VictoriaMetrics Cluster Mode
-helm upgrade --install victoria-metrics vm/victoria-metrics-cluster \
-  --version "$VICTORIAMETRICS_CLUSTER_CHART_VERSION" \
-  --namespace monitoring \
-  --create-namespace \
-  --debug=true \
-  --wait \
-  --timeout=900s \
-  -f helm-apps/victoriametrics-cluster-mode/values.yaml
+# Add entry in /etc/hosts for argocd
+kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service/argocd-server --timeout=900s -n argocd
+export IP=$(kubectl get ing argocd -n myapps -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  $ARGOCD_DNS" /etc/hosts || sudo sh -c "echo '$IP  $ARGOCD_DNS' >> /etc/hosts"
 #-----------------------------------------------

@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+  annotations:
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
+    argocd.argoproj.io/sync-wave: "6"
+  finalizers:
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/app_deletion/
+    - resources-finalizer.argocd.argoproj.io
+# https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  # https://argo-cd.readthedocs.io/en/stable/user-guide/projects/
+  project: default
+  # https://argo-cd.readthedocs.io/en/stable/user-guide/multiple_sources/
+  sources:
+  - repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: v1.17.2
+    helm:
+      valueFiles:
+      - $values/helm-apps/cert-manager/values.yaml
+  - repoURL: https://github.com/aeciopires/learning-victoriametrics
+    # Branch or tag name
+    targetRevision: main
+    ref: values
+  # https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-options/
+    syncOptions:
+    - CreateNamespace=true

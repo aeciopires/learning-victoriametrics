@@ -31,11 +31,11 @@ CLUSTER_NAME="kind-multinodes"
 
 
 requirements:
-REQUIRED_PACKAGES := docker wget curl kind jq kubefwd cmctl
+REQUIRED_PACKAGES := docker wget curl kind jq argocd cmctl
 $(foreach package,$(REQUIRED_PACKAGES),\
 	$(if $(shell command -v $(package) 2> /dev/null),$(info Found `$(package)`),$(error Please install `$(package)`)))
 
-vm-cluster-mode:
+up:
 	make requirements
 	chmod +x run.sh
 	./run.sh
@@ -46,6 +46,6 @@ down:
 	kind delete clusters ${CLUSTER_NAME}
 
 .ONESHELL:
-recreate-vm-cluster-mode:
+recreate:
 	make down
-	make vm-cluster-mode
+	make up

@@ -4,8 +4,8 @@
   - [Homebrew](#homebrew)
   - [Essentials](#essentials)
 - [asdf](#asdf)
+- [argocd-cli](#argocd-cli)
 - [docker](#docker)
-- [kubefwd](#kubefwd)
 - [Go](#go)
 - [cmctl](#cmctl)
 - [Helm](#helm)
@@ -103,6 +103,25 @@ source ~/.bash_profile
 
 Reference: https://asdf-vm.com/guide/introduction.html
 
+# argocd-cli
+
+Install ``argocd-cli`` using ``asdf``:
+
+> Before proceeding, make sure you have installed the command [asdf](#asdf).
+
+```bash
+VERSION=3.0.0
+asdf plugin-add argocd https://github.com/beardix/asdf-argocd.git
+asdf list all argocd
+asdf install argocd $VERSION
+asdf global argocd $VERSION
+```
+
+References:
+- https://argo-cd.readthedocs.io/en/stable/
+- https://github.com/beardix/asdf-argocd
+- http://blog.aeciopires.com/usando-o-argo-cd-para-implementar-a-abordagem-gitops-nos-clusters-kubernetes/
+
 # docker
 
 Install Docker CE (Community Edition) following the instructions on the page: https://docs.docker.com/desktop/install/mac-install/.
@@ -117,22 +136,6 @@ brew install docker-machine
 ```
 
 Reference: https://stackoverflow.com/questions/44084846/cannot-connect-to-the-docker-daemon-on-macos
-
-# kubefwd
-
-References:
-- https://github.com/txn2/kubefwd
-- https://imti.co/kubernetes-port-forwarding
-- https://kubefwd.com
-- https://kubefwd.com/install/mac/
-
-Run the following commands.
-
-> Before proceeding, make sure you have installed the command [Homebrew](#homebrew).
-
-```bash
-brew install txn2/tap/kubefwd
-```
 
 # Go
 
