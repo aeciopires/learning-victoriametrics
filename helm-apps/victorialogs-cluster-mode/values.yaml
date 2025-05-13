@@ -18,7 +18,7 @@ printNotes: true
 common:
   # -- common for all components image configuration
   image:
-    tag: "v1.22.2"
+    tag: "v1.22.2-victorialogs"
 
 serviceAccount:
   # -- Specifies whether a service account should be created
