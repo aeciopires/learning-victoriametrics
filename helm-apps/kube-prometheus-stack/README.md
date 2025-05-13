@@ -117,6 +117,7 @@ Dashboards to import:
 - https://grafana.com/grafana/dashboards/11176 (select the VictoriaMetrics datasource)
 - https://grafana.com/grafana/dashboards/21394 (select the VictoriaMetrics datasource)
 - https://grafana.com/grafana/dashboards/11831 (select the VictoriaMetrics datasource)
+- https://grafana.com/grafana/dashboards/22759-victorialogs-explorer/ (select the VictoriaLogs datasource)
 
 # References
 

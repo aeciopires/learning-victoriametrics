@@ -39,6 +39,14 @@
 - https://medium.com/miro-engineering/prometheus-high-availability-and-fault-tolerance-strategy-long-term-storage-with-victoriametrics-82f6f3f0409e
 - https://github.com/jacksontj/promxy
 - https://hub.docker.com/r/victoriametrics/victoria-metrics
+- https://github.com/VictoriaMetrics/helm-charts/tree/master/charts/victoria-metrics-single
+- https://github.com/VictoriaMetrics/VictoriaMetrics/wiki/Single-server-VictoriaMetrics
+- https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write
+- https://blog.ogenki.io/post/series/observability/metrics/
+- https://blog.ogenki.io/post/series/observability/alerts/
+
+Dashboards:
+
 - https://grafana.com/grafana/dashboards/10229
 - https://grafana.com/grafana/dashboards/11040
 - https://grafana.com/grafana/dashboards/11039
@@ -46,11 +54,6 @@
 - https://grafana.com/grafana/dashboards/11176
 - https://grafana.com/grafana/dashboards/21394
 - https://grafana.com/grafana/dashboards/11831 
-- https://github.com/VictoriaMetrics/helm-charts/tree/master/charts/victoria-metrics-single
-- https://github.com/VictoriaMetrics/VictoriaMetrics/wiki/Single-server-VictoriaMetrics
-- https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write
-- https://blog.ogenki.io/post/series/observability/metrics/
-- https://blog.ogenki.io/post/series/observability/alerts/
 
 ## VictoriaLogs
 
@@ -64,3 +67,7 @@
 - https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker#victoriaLogs-server
 - https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker
 - https://docs.victoriametrics.com/victorialogs/quickstart/
+
+Dashboards:
+
+- https://grafana.com/grafana/dashboards/22759-victorialogs-explorer/
