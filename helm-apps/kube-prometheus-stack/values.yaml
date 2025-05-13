@@ -46,6 +46,9 @@ alertmanager:
 grafana:
   enabled: true
 
+  plugins:
+    - victoriametrics-logs-datasource
+
   additionalDataSources:
   - name: VictoriaMetrics
     type: prometheus
