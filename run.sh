@@ -287,9 +287,4 @@ sudo grep -qxF "$IP  $PROMETHEUS_DNS" /etc/hosts || sudo sh -c "echo '$IP  $PROM
 kubectl wait --for=create ingress/victoria-metrics-victoria-metrics-cluster-vmauth --timeout=900s -n monitoring
 export IP=$(kubectl get ing victoria-metrics-victoria-metrics-cluster-vmauth -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
 sudo grep -qxF "$IP  $VICTORIAMETRICS_CLUSTER_MODE_DNS" /etc/hosts || sudo sh -c "echo '$IP  $VICTORIAMETRICS_CLUSTER_MODE_DNS' >> /etc/hosts"
-
-# Add entry in /etc/hosts for victorialogs-cluster-mode
-kubectl wait --for=create ingress/victoria-logs-victoria-logs-cluster-vmauth --timeout=900s -n monitoring
-export IP=$(kubectl get ing victoria-logs-victoria-logs-cluster-vmauth -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
-sudo grep -qxF "$IP  $VICTORIALOGS_CLUSTER_MODE_DNS" /etc/hosts || sudo sh -c "echo '$IP  $VICTORIALOGS_CLUSTER_MODE_DNS' >> /etc/hosts"
 #-----------------------------------------------

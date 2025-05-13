@@ -641,7 +641,7 @@ vmauth:
       url_prefix: "http://victoria-metrics-victoria-metrics-cluster-vmselect.monitoring.svc.cluster.local:8481"
     - username: "user-logs-select"
       password: "changeme"
-      url_prefix: "http://victoria-logs-victoria-logs-cluster-vlselect.monitoring.svc.cluster.local:8471"
+      url_prefix: "http://victoria-logs-victoria-logs-cluster-vlselect.monitoring.svc.cluster.local:9471"
   # -- VMAuth Deployment strategy
   strategy:
     rollingUpdate:
