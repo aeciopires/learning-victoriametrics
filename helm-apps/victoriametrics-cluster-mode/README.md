@@ -21,6 +21,8 @@
 
 # Architecture
 
+> Reference: https://docs.victoriametrics.com/victoriametrics/cluster-victoriametrics/
+
 > Attention!!! It is recommended to use the [**single-node version**](https://github.com/VictoriaMetrics/VictoriaMetrics) instead of the cluster version for ingestion rates lower than a million data points per second. The single-node version scales perfectly with the number of CPU cores, RAM and available storage space. The single-node version is easier to configure and operate compared to the cluster version, so think twice before choosing the cluster version. See this question for more details.
 
 **VictoriaMetrics** is a fast, cost-effective and scalable time series database. It can be used as a long-term remote storage for Prometheus.
@@ -32,8 +34,6 @@
 - **vmselect** - performs incoming queries by fetching the needed data from all the configured vmstorage nodes
 
 ![vm-cluster-mode](../../images/vm-cluster-mode.png)
-
-Reference: https://docs.victoriametrics.com/victoriametrics/cluster-victoriametrics/
 
 Each service may scale independently and may run on the most suitable hardware. vmstorage nodes don’t know about each other, don’t communicate with each other and don’t share any data. This is a shared nothing architecture. It increases cluster availability, and simplifies cluster maintenance as well as cluster scaling.
 

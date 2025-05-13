@@ -6,7 +6,7 @@ global:
     registry: ""
     vm:
       # -- Image tag for all vm charts
-      tag: "v1.116.0"
+      tag: "v1.117.0"
   # -- Openshift security context compatibility configuration
   compatibility:
     openshift:
@@ -639,6 +639,9 @@ vmauth:
     - username: "user-select"
       password: "changeme"
       url_prefix: "http://victoria-metrics-victoria-metrics-cluster-vmselect.monitoring.svc.cluster.local:8481"
+    - username: "user-logs-select"
+      password: "changeme"
+      url_prefix: "http://victoria-logs-victoria-logs-cluster-vlselect.monitoring.svc.cluster.local:8471"
   # -- VMAuth Deployment strategy
   strategy:
     rollingUpdate:

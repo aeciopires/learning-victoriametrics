@@ -12,7 +12,7 @@ KIND_CLUSTER_FILE="/tmp/kind-cluster.yaml"
 METALLB_CHART_VERSION="0.14.9"
 METALLB_FILE="/tmp/metallb-ingress-address.yaml"
 CERT_MANAGER_CLUSTER_ISSUE_FILE="/tmp/cert-cluster-issue.yaml"
-ARGOCD_CHART_VERSION="8.0.0"
+ARGOCD_CHART_VERSION="8.0.1"
 ARGOCD_USER="admin"
 ARGOCD_INITIAL_PASS="changeme"
 ARGOCD_DNS="argocd.${DOMAIN_NAME}"
@@ -22,6 +22,7 @@ ALERTMANAGER_DNS="alertmanager.${DOMAIN_NAME}"
 GRAFANA_DNS="grafana.${DOMAIN_NAME}"
 PROMETHEUS_DNS="prometheus.${DOMAIN_NAME}"
 VICTORIAMETRICS_CLUSTER_MODE_DNS="victoriametrics-cluster.${DOMAIN_NAME}"
+VICTORIALOGS_CLUSTER_MODE_DNS="victorialogs-cluster.${DOMAIN_NAME}"
 #------------------------
 
 
@@ -229,8 +230,11 @@ echo "[INFO] Waiting for install cert-manager"
 cmctl check api --wait=5m
 kubectl apply -f "$CERT_MANAGER_CLUSTER_ISSUE_FILE"
 
-# victoria-metrics cluster-mode
+# victoriametrics cluster-mode
 kubectl -n argocd apply -f helm-apps/victoriametrics-cluster-mode/application.yaml
+
+# victorialogs cluster-mode
+kubectl -n argocd apply -f helm-apps/victorialogs-cluster-mode/application.yaml
 
 # Install CRDs prometheus
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagerconfigs.yaml"
@@ -283,4 +287,9 @@ sudo grep -qxF "$IP  $PROMETHEUS_DNS" /etc/hosts || sudo sh -c "echo '$IP  $PROM
 kubectl wait --for=create ingress/victoria-metrics-victoria-metrics-cluster-vmauth --timeout=900s -n monitoring
 export IP=$(kubectl get ing victoria-metrics-victoria-metrics-cluster-vmauth -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
 sudo grep -qxF "$IP  $VICTORIAMETRICS_CLUSTER_MODE_DNS" /etc/hosts || sudo sh -c "echo '$IP  $VICTORIAMETRICS_CLUSTER_MODE_DNS' >> /etc/hosts"
+
+# Add entry in /etc/hosts for victorialogs-cluster-mode
+kubectl wait --for=create ingress/victoria-logs-victoria-logs-cluster-vmauth --timeout=900s -n monitoring
+export IP=$(kubectl get ing victoria-logs-victoria-logs-cluster-vmauth -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+sudo grep -qxF "$IP  $VICTORIALOGS_CLUSTER_MODE_DNS" /etc/hosts || sudo sh -c "echo '$IP  $VICTORIALOGS_CLUSTER_MODE_DNS' >> /etc/hosts"
 #-----------------------------------------------

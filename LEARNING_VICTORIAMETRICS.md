@@ -4,10 +4,14 @@
 
 - [learning-victoria-metrics](#learning-victoria-metrics)
 - [Documentation](#documentation)
+  - [VictoriaMetrics](#victoriametrics)
+  - [VictoriaLogs](#victorialogs)
 
 <!-- TOC -->
 
 # Documentation
+
+## VictoriaMetrics
 
 - https://victoriametrics.com/
 - https://victoriametrics.com/blog/victoriametrics-getting-started/
@@ -45,3 +49,18 @@
 - https://github.com/VictoriaMetrics/helm-charts/tree/master/charts/victoria-metrics-single
 - https://github.com/VictoriaMetrics/VictoriaMetrics/wiki/Single-server-VictoriaMetrics
 - https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write
+- https://blog.ogenki.io/post/series/observability/metrics/
+- https://blog.ogenki.io/post/series/observability/alerts/
+
+## VictoriaLogs
+
+- https://docs.victoriametrics.com/victorialogs/
+- https://docs.victoriametrics.com/victorialogs/cluster/
+- https://docs.victoriametrics.com/victorialogs/querying/
+- https://ntakashi.com/blog/prometheus-query-visibility-prom-analytics-proxy/
+- https://medium.com/@jdegbun/deploying-loki-grafana-and-promtail-for-log-monitoring-in-a-kubernetes-cluster-a0b725621626
+- https://hub.docker.com/r/victoriametrics/victoria-logs/
+- https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/app/victoria-logs
+- https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker#victoriaLogs-server
+- https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker
+- https://docs.victoriametrics.com/victorialogs/quickstart/

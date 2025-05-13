@@ -20,7 +20,7 @@ spec:
   sources:
   - repoURL: https://victoriametrics.github.io/helm-charts/
     chart: victoria-metrics-cluster
-    targetRevision: 0.21.0
+    targetRevision: 0.22.0
     helm:
       valueFiles:
       - $values/helm-apps/victoriametrics-cluster-mode/values.yaml

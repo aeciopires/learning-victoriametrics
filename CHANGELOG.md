@@ -3,9 +3,29 @@
 <!-- TOC -->
 
 - [Changelog](#changelog)
+- [1.1.0](#110)
 - [1.0.0](#100)
 
 <!-- TOC -->
+
+# 1.1.0
+
+Date: 2025/05/13
+
+> This homelab was tested in Ubuntu 22.04 64 bits
+
+- Updated documentation
+- Added VictoriaLogs cluster mode
+- Adjusted vmauth config to support VictoriaLogs components
+- Bump software versions:
+  - ArgoCD: 3.0.0
+    - helm chart: 8.0.1
+  - VictoriaMetrics Cluster (all components): 1.117.0
+    - helm chart: 0.22.0
+  - VictoriaLogs Cluster (all components): 1.22.2
+    - helm chart: 0.0.2
+  - Prometheus-Operator: v0.82.0
+    - helm chart: 72.3.1
 
 # 1.0.0
 

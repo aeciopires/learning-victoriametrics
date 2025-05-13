@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: monitor
+  name: victoria-logs
   namespace: argocd
   annotations:
     # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
@@ -18,12 +18,12 @@ spec:
   project: default
   # https://argo-cd.readthedocs.io/en/stable/user-guide/multiple_sources/
   sources:
-  - repoURL: https://prometheus-community.github.io/helm-charts
-    chart: kube-prometheus-stack
-    targetRevision: 72.3.1
+  - repoURL: https://victoriametrics.github.io/helm-charts/
+    chart: victoria-logs-cluster
+    targetRevision: 0.0.2
     helm:
       valueFiles:
-      - $values/helm-apps/kube-prometheus-stack/values.yaml
+      - $values/helm-apps/victorialogs-cluster-mode/values.yaml
   - repoURL: https://github.com/aeciopires/learning-victoriametrics
     # Branch or tag name
     targetRevision: main
