@@ -48,6 +48,7 @@ grafana:
 
   plugins:
     - victoriametrics-logs-datasource
+    - victoriametrics-metrics-datasource
 
   additionalDataSources:
   - name: VictoriaMetrics
