@@ -14,8 +14,9 @@ Date: 2025/05/13
 
 > This homelab was tested in Ubuntu 22.04 64 bits
 
-- Updated documentation
+- Documentation updated
 - Added VictoriaLogs cluster mode
+- Added datasource and plugins for VictoriaMetrics and VictoriaLogs
 - Adjusted vmauth config to support VictoriaLogs components
 - Bump software versions:
   - ArgoCD: 3.0.0
