@@ -60,6 +60,16 @@ grafana:
     orgId: 1
     url: http://victoria-metrics-victoria-metrics-cluster-vmselect.monitoring.svc.cluster.local:8481/select/0/prometheus/
     version: 1
+  - name: VictoriaLogs
+    type: victoriametrics-logs-datasource
+    access: direct
+    editable: true
+    jsonData:
+      tlsSkipVerify: true
+    orgId: 1
+    url: http://victoria-logs-victoria-logs-cluster-vlselect.monitoring.svc.cluster.local:9471
+    version: 1
+
 
   ingress:
     ## If true, Grafana Ingress will be created
