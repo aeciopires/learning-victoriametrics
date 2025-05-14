@@ -39,7 +39,7 @@ VictoriaLogs in cluster mode consists of following components:
   - It accepts logs from ``vlinsert`` nodes and stores them at the directory specified via ``-storageDataPath`` command-line flag. See [these docs](https://docs.victoriametrics.com/victorialogs/#storage) for details about this flag.
   - It processes requests from ``vlselect`` nodes. It selects the requested logs and performs all data transformations and calculations, which can be executed locally, before sending the results to ``vlselect``.
 
-![vl-cluster-mode](../../images/vl-cluster-mode.png)
+![vl-cluster-mode](../../images/vl-cluster-mode2.png)
 
 Every component of the VictoriaLogs cluster can scale from a single node to arbitrary number of nodes and can run on the most suitable hardware for the given workload. ``vlinsert`` nodes can be used as ``vlselect`` nodes, so the minimum VictoriaLogs cluster must contain a ``vlstorage`` node plus a node, which plays both ``vlinsert`` and ``vlselect roles``. It isn’t recommended sharing ``vlinsert`` and ``vlselect`` responsibilities in a single node, since this increases chances that heavy queries can negatively affect data ingestion and vice versa.
 

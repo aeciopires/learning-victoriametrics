@@ -33,7 +33,7 @@
 - **vminsert** - accepts the ingested data and spreads it among vmstorage nodes according to consistent hashing over metric name and all its labels
 - **vmselect** - performs incoming queries by fetching the needed data from all the configured vmstorage nodes
 
-![vm-cluster-mode](../../images/vm-cluster-mode.png)
+![vm-cluster-mode](../../images/vm-cluster-mode2.png)
 
 Each service may scale independently and may run on the most suitable hardware. vmstorage nodes don’t know about each other, don’t communicate with each other and don’t share any data. This is a shared nothing architecture. It increases cluster availability, and simplifies cluster maintenance as well as cluster scaling.
 

@@ -13,6 +13,7 @@
   - [cert-manager](#cert-manager)
   - [kube-prometheus-stack](#kube-prometheus-stack)
   - [kube-pires](#kube-pires)
+- [VictoriaMetrics and VictoriaLogs Architecture](#victoriametrics-and-victorialogs-architecture)
 - [Tools used](#tools-used)
 - [Request workflow](#request-workflow)
 - [Uninstall](#uninstall)
@@ -101,6 +102,10 @@ See the [helm-apps/kube-stack-prometheus/README.md](helm-apps/kube-prometheus-st
 ## kube-pires
 
 See the [helm-apps/kube-pires/README.md](helm-apps/kube-pires/README.md)
+
+# VictoriaMetrics and VictoriaLogs Architecture
+
+![vm-vl-architecture](images/vm-vl-cluster-arch.png)
 
 # Tools used
 

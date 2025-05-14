@@ -772,7 +772,7 @@ vmauth:
 # -- Values for [vector helm chart](https://github.com/vectordotdev/helm-charts/tree/develop/charts/vector)
 vector:
   # -- Enable deployment of vector
-  enabled: false
+  enabled: true
   role: Agent
   dataDir: /vector-data-dir
   resources: {}
@@ -785,7 +785,7 @@ vector:
       containerPort: 9090
       protocol: TCP
   service:
-    enabled: false
+    enabled: true
   existingConfigMaps:
     - vector-vl-config
   # -- Forces custom configuration creation in a given namespace even if vector.enabled is false
