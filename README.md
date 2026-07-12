@@ -25,8 +25,6 @@
 
 # About
 
-
-
 # Use Case
 
 [VictoriaMetrics](https://victoriametrics.com) is a fast, cost-effective and scalable time series database. It can be used as a long-term remote storage for [Prometheus](https://prometheus.io/).

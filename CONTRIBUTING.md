@@ -1,8 +1,12 @@
 <!-- TOC -->
 
 - [Contributing](#contributing)
-- [Testing and upgrading software versions](#testing-and-upgrading-software-versions)
-- [Adding a new VictoriaMetrics-ecosystem Helm app (e.g. VictoriaTraces)](#adding-a-new-victoriametrics-ecosystem-helm-app-eg-victoriatraces)
+  - [Repository structure](#repository-structure)
+  - [Workflows](#workflows)
+    - [Component installation workflow](#component-installation-workflow)
+    - [Component communication workflow](#component-communication-workflow)
+  - [Testing and upgrading software versions](#testing-and-upgrading-software-versions)
+  - [Adding a new VictoriaMetrics-ecosystem Helm app (e.g. VictoriaTraces)](#adding-a-new-victoriametrics-ecosystem-helm-app-eg-victoriatraces)
 
 <!-- TOC -->
 
@@ -46,7 +50,7 @@ git checkout -b BRANCH_NAME
 git branch
 ```
 
-- Make your changes and tests to the new branch.
+- Make your changes and tests to the new branch. See the next sections for more details about the structure of this repository, workflows and how to test your changes.
 
 - Commit the changes to the branch.
 - Push files to repository remote with command:
@@ -92,7 +96,122 @@ git push origin main
 Reference:
 - https://blog.scottlowe.org/2015/01/27/using-fork-branch-git-workflow/
 
-# Testing and upgrading software versions
+## Repository structure
+
+This repository holds no application source code. It is a GitOps configuration repo: `run.sh` bootstraps a local `kind` cluster and ArgoCD, then ArgoCD continuously syncs every other component straight from this Git repository.
+
+```text
+.
+├── run.sh                       # Creates the kind cluster, installs MetalLB + ArgoCD via Helm,
+│                                 # then applies every helm-apps/<app>/application.yaml via kubectl
+├── Makefile                     # make up | make down | make recreate (wraps run.sh + requirement checks)
+├── REQUIREMENTS.md              # Points to softwares-ubuntu.md / softwares-macos.md
+├── softwares-ubuntu.md          # OS-level tool install instructions (asdf, kind, helm, kubectl, argocd-cli, cmctl, ...)
+├── softwares-macos.md           # Same, for MacOS (PT-BR)
+├── LEARNING_VICTORIAMETRICS.md  # Curated links used while studying VictoriaMetrics/VictoriaLogs
+├── CHANGELOG.md                 # One heading per release, listing bumped component/chart versions
+├── CONTRIBUTING.md              # This file
+├── CLAUDE.md                    # Guidance for AI coding agents working in this repo
+├── README.md                    # Entry point: use case, requirements, how to stand up the cluster
+├── images/                      # Architecture diagrams and screenshots referenced from the READMEs
+└── helm-apps/                   # One directory per Helm-based application, see structure below
+    ├── argocd/                  # Installed directly via `helm upgrade --install` in run.sh (no application.yaml,
+    │   └── values.yaml          # since ArgoCD itself can't deploy ArgoCD)
+    ├── ingress-nginx/
+    ├── cert-manager/
+    ├── kube-prometheus-stack/   # Prometheus, Grafana, Alertmanager
+    ├── victoriametrics-cluster-mode/  # vminsert / vmselect / vmstorage / vmauth (shared ingress)
+    ├── victorialogs-cluster-mode/     # vlinsert / vlselect / vlstorage
+    ├── victoriatraces/                # vtinsert / vtselect / vtstorage
+    └── kube-pires/              # Sample app deployed into the `myapps` namespace
+```
+
+Every `helm-apps/<app>/` directory (except `argocd/`, see above) follows the same three-file shape:
+
+- `application.yaml` — the ArgoCD `Application` manifest. Declares two `sources`: the upstream Helm chart (`repoURL`/`chart`/`targetRevision`) and this Git repo as a second source (`ref: values`) supplying `helm-apps/<app>/values.yaml`. `syncPolicy.automated` sets `prune: true` / `selfHeal: true`, so ArgoCD continuously reconciles the live cluster to match what's committed here.
+- `values.yaml` — Helm values passed to the upstream chart, normally generated from the chart's own defaults (`helm show values <chart> --version <version>`) and then trimmed/customized.
+- `README.md` — architecture, access URLs, internal write/read API endpoints, and `kubectl` troubleshooting commands for that component.
+
+## Workflows
+
+### Component installation workflow
+
+`run.sh` (invoked by `make up`) installs components in two phases: MetalLB and ArgoCD are installed directly via `helm upgrade --install`, and everything else is an ArgoCD `Application` applied via `kubectl`, which ArgoCD then syncs from this Git repo.
+
+```mermaid
+flowchart TD
+    A["make up"] --> B["kind create cluster<br/>kind-multinodes (3 nodes)"]
+    B --> C["helm install metallb<br/>(LoadBalancer support for kind)"]
+    C --> D["helm install argocd<br/>(GitOps controller)"]
+    D --> E["argocd login + repo add<br/>this repo + kube-pires repo"]
+
+    E --> F["kubectl apply application.yaml"]
+    F --> G["ingress-nginx"]
+    F --> H["cert-manager<br/>+ ClusterIssuer (Let's Encrypt HTTP-01)"]
+    F --> I["victoria-metrics<br/>(includes shared vmauth)"]
+    F --> J["victoria-logs"]
+    F --> K["victoria-traces"]
+    F --> L["kube-prometheus-stack<br/>(Prometheus/Grafana/Alertmanager)<br/>CRDs applied manually first"]
+    F --> M["kube-pires"]
+
+    G -.->|"provides Ingress class used by"| H
+    G -.->|"provides Ingress class used by"| I
+
+    subgraph Sync["ArgoCD continuous sync (per app)"]
+        direction LR
+        S1["Fetch chart from repoURL<br/>(targetRevision)"] --> S2["Fetch values.yaml from<br/>this Git repo (ref: values)"]
+        S2 --> S3["helm template"] --> S4["kubectl apply"] --> S5["prune: true / selfHeal: true"]
+    end
+
+    G --- Sync
+    H --- Sync
+    I --- Sync
+    J --- Sync
+    K --- Sync
+    L --- Sync
+    M --- Sync
+
+    M --> N["kubectl wait for each Ingress,<br/>append LoadBalancer IP to /etc/hosts"]
+```
+
+Because `values.yaml` is fetched from this Git repository (not the local working copy), any local edit only takes effect on the cluster once it is committed and pushed — `helm template` locally (or a direct `helm upgrade --install` against the same chart/values) is the fastest way to validate a change before pushing.
+
+### Component communication workflow
+
+VictoriaMetrics, VictoriaLogs and VictoriaTraces are intentionally exposed through a **single shared `vmauth`** (deployed only by `victoriametrics-cluster-mode`) behind **one** ingress hostname, `victoriametrics-cluster.mycompany.com`, differentiated by HTTP Basic Auth user — not one ingress hostname per product. Every other app (ArgoCD, Grafana/Prometheus/Alertmanager, kube-pires) gets its own ingress hostname/service directly.
+
+```mermaid
+flowchart LR
+    Client["Client (browser / curl)"] --> Ingress["ingress-nginx<br/>*.mycompany.com (TLS via cert-manager)"]
+
+    Ingress -->|argocd.mycompany.com| ArgoCD["ArgoCD UI"]
+    Ingress -->|"grafana / prometheus /<br/>alertmanager.mycompany.com"| KPS["Grafana / Prometheus / Alertmanager<br/>(kube-prometheus-stack)"]
+    Ingress -->|kube-pires.mycompany.com| KubePires["kube-pires"]
+    Ingress -->|"victoriametrics-cluster.mycompany.com<br/>+ HTTP Basic Auth"| VMAuth["vmauth<br/>(deployed by victoria-metrics)"]
+
+    VMAuth -->|"user-insert"| VMInsert["vminsert :8480"]
+    VMAuth -->|"user-select"| VMSelect["vmselect :8481"]
+    VMAuth -->|"user-logs-select"| VLSelect["vlselect :9471"]
+    VMAuth -->|"user-traces-insert"| VTInsert["vtinsert :10481"]
+    VMAuth -->|"user-traces-select"| VTSelect["vtselect :10471"]
+
+    VMInsert --> VMStorage["vmstorage"]
+    VMSelect --> VMStorage
+    VLSelect --> VLStorage["vlstorage"]
+    VLInsert["vlinsert :9481<br/>(direct in-cluster DNS,<br/>not routed via vmauth)"] --> VLStorage
+    VTInsert --> VTStorage["vtstorage"]
+    VTSelect --> VTStorage
+
+    KPS -.->|"Prometheus Data Source"| VMSelect
+    KPS -.->|"Jaeger Data Source"| VTSelect
+```
+
+Notes:
+- `vlinsert` is reached directly at its internal `*.monitoring.svc.cluster.local` DNS name (e.g. by Vector log shippers running in-cluster) rather than through `vmauth`, since log ingestion doesn't need external Basic Auth in this homelab.
+- Adding `user-<app>-insert`/`user-<app>-select` entries to `vmauth.config.users` in [helm-apps/victoriametrics-cluster-mode/values.yaml](helm-apps/victoriametrics-cluster-mode/values.yaml) is how every new VictoriaMetrics-ecosystem product (see the recipe below) gets wired into this shared communication path.
+- `vmauth` only reads `-auth.config` once at startup unless `-configCheckInterval` is set; this repo sets it to `30s` so `vmauth.config.users` changes take effect without a manual pod restart.
+
+## Testing and upgrading software versions
 
 Every third-party component pinned in this repo (`kind` node image, MetalLB, ArgoCD, cert-manager, ingress-nginx, kube-prometheus-stack/Prometheus-Operator, and the VictoriaMetrics/VictoriaLogs/VictoriaTraces Helm charts) should be bumped and re-tested end-to-end on a local `kind-multinodes` cluster before opening a PR. Follow this sequence:
 
@@ -141,7 +260,7 @@ Every third-party component pinned in this repo (`kind` node image, MetalLB, Arg
 
 6. **Tear down** with `make down` once satisfied, so the branch isn't tied to local cluster state.
 
-# Adding a new VictoriaMetrics-ecosystem Helm app (e.g. VictoriaTraces)
+## Adding a new VictoriaMetrics-ecosystem Helm app (e.g. VictoriaTraces)
 
 New components from the VictoriaMetrics Helm charts repository (https://github.com/VictoriaMetrics/helm-charts) follow the same recipe used for `victoriametrics-cluster-mode`, `victorialogs-cluster-mode` and `victoriatraces`:
 

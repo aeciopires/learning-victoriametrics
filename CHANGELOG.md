@@ -78,5 +78,3 @@ Date: 2025/05/09
   - kube-pires: 1.1.0
   - Ingress-Nginx: 1.12.2
   - Cert-manager: 1.17.2
-
-

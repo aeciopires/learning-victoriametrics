@@ -108,6 +108,12 @@ Open the browser and access the URL: https://grafana.mycompany.com/
 - **login**: admin
 - **password**: prom-operator
 
+If the password does not work, you can get the password with the following command:
+
+```bash
+kubectl get secret --namespace monitoring monitor-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+```
+
 Dashboards to import:
 
 - [../kube-pires/kube-pires-dashboard.json](../kube-pires/kube-pires-dashboard.json) ( (select the prometheus datasource))

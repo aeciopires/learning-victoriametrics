@@ -6,6 +6,7 @@
 - [Documentation](#documentation)
   - [VictoriaMetrics](#victoriametrics)
   - [VictoriaLogs](#victorialogs)
+  - [VictoriaTraces](#victoriatraces)
 
 <!-- TOC -->
 
@@ -47,19 +48,24 @@
 
 Dashboards:
 
-- https://grafana.com/grafana/dashboards/10229
-- https://grafana.com/grafana/dashboards/11040
-- https://grafana.com/grafana/dashboards/11039
-- https://grafana.com/grafana/dashboards/11038
-- https://grafana.com/grafana/dashboards/11176
-- https://grafana.com/grafana/dashboards/21394
-- https://grafana.com/grafana/dashboards/11831 
+- https://grafana.com/grafana/dashboards/11176-victoriametrics-cluster/
+- https://grafana.com/grafana/dashboards/12683-victoriametrics-vmagent/
+- https://grafana.com/grafana/dashboards/17869-victoriametrics-operator/
+- https://grafana.com/grafana/dashboards/10229-victoriametrics-single-node/
+- https://grafana.com/grafana/dashboards/14950-victoriametrics-vmalert/
+- https://grafana.com/grafana/dashboards/16399-victoriametrics-cluster-per-tenant-statistic/
+- https://grafana.com/grafana/dashboards/21394-victoriametrics-vmauth/
 
 ## VictoriaLogs
 
 - https://docs.victoriametrics.com/victorialogs/
+- https://github.com/VictoriaMetrics/VictoriaLogs
 - https://docs.victoriametrics.com/victorialogs/cluster/
+- https://docs.victoriametrics.com/victorialogs/keyconcepts/
 - https://docs.victoriametrics.com/victorialogs/querying/
+- https://docs.victoriametrics.com/victorialogs/data-ingestion/
+- https://docs.victoriametrics.com/victorialogs/logsql/
+- https://docs.victoriametrics.com/victorialogs/vmalert/
 - https://ntakashi.com/blog/prometheus-query-visibility-prom-analytics-proxy/
 - https://medium.com/@jdegbun/deploying-loki-grafana-and-promtail-for-log-monitoring-in-a-kubernetes-cluster-a0b725621626
 - https://hub.docker.com/r/victoriametrics/victoria-logs/
@@ -70,4 +76,25 @@ Dashboards:
 
 Dashboards:
 
+- https://grafana.com/grafana/dashboards/22084-victorialogs-single-node/
+- https://grafana.com/grafana/dashboards/23274-victorialogs-cluster/
 - https://grafana.com/grafana/dashboards/22759-victorialogs-explorer/
+- https://grafana.com/grafana/dashboards/24585-victorialogs-internal-state/
+- https://grafana.com/grafana/dashboards/24513-victorialogs-vlagent/
+
+## VictoriaTraces
+
+- https://docs.victoriametrics.com/victoriatraces/
+- https://github.com/VictoriaMetrics/VictoriaTraces
+- https://docs.victoriametrics.com/victoriatraces/cluster/
+- https://docs.victoriametrics.com/victoriatraces/keyconcepts/
+- https://docs.victoriametrics.com/victoriatraces/data-ingestion/
+- https://docs.victoriametrics.com/victoriatraces/data-ingestion/opentelemetry/
+- https://docs.victoriametrics.com/victoriatraces/querying/
+- https://docs.victoriametrics.com/victoriatraces/vmalert/
+- https://docs.victoriametrics.com/victoriatraces/troubleshooting/
+
+Dashboards:
+
+- https://grafana.com/grafana/dashboards/24136-victoriatraces-single-node/
+- https://grafana.com/grafana/dashboards/24134-victoriatraces-cluster/

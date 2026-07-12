@@ -33,6 +33,8 @@ VictoriaTraces in cluster mode consists of the following components:
 - **vtselect**: accepts incoming queries (Jaeger Query Service JSON API), requests the needed data from ``vtstorage`` nodes, processes the queries and returns the corresponding responses.
 - **vtstorage**: stores the ingested trace spans at the directory specified via ``-storageDataPath`` command-line flag.
 
+![vt-cluster-mode](../../images/vt-cluster-mode2.png)
+
 Every component can scale from a single node to arbitrary number of nodes and can run on the most suitable hardware for the given workload. This follows the same shared-nothing cluster architecture as [VictoriaMetrics](../victoriametrics-cluster-mode/README.md) and [VictoriaLogs](../victorialogs-cluster-mode/README.md).
 
 ## vmauth
