@@ -18,7 +18,7 @@ printNotes: true
 common:
   # -- common for all components image configuration
   image:
-    tag: "v1.22.2-victorialogs"
+    tag: "v1.51.0"
 
 serviceAccount:
   # -- Specifies whether a service account should be created
@@ -784,8 +784,13 @@ vector:
     - name: prom-exporter
       containerPort: 9090
       protocol: TCP
+  # -- Kept disabled (chart's own default): victoria-logs-cluster >=0.2.x's generic per-component
+  # Service loop calls a `<component>.ports` named template for every component with
+  # `service.enabled: true`, but the vector subchart's own `vector.ports` helper expects a full
+  # Helm rendering context (`.Values.customConfig`) rather than the plain values dict that loop
+  # passes it, so enabling this crashes `helm template` with a nil pointer.
   service:
-    enabled: true
+    enabled: false
   existingConfigMaps:
     - vector-vl-config
   # -- Forces custom configuration creation in a given namespace even if vector.enabled is false

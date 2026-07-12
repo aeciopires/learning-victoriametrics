@@ -8,6 +8,7 @@
 - [Create cluster and deploy applications](#create-cluster-and-deploy-applications)
   - [VictoriaMetrics Cluster Mode](#victoriametrics-cluster-mode)
   - [VictoriaLogs Cluster Mode](#victorialogs-cluster-mode)
+  - [VictoriaTraces Cluster Mode](#victoriatraces-cluster-mode)
   - [argocd](#argocd)
   - [ingress-nginx](#ingress-nginx)
   - [cert-manager](#cert-manager)
@@ -72,7 +73,7 @@ Actions performed:
 
 - Check requirements
 - Create kind Kubernetes cluster
-- Install helm apps: MetalLB, VictoriaMetrics (cluster mode), VictoriaLogs (cluster mode), ingress-nginx, certificate-manager, kube-pires and kube-stack-prometheus
+- Install helm apps: MetalLB, VictoriaMetrics (cluster mode), VictoriaLogs (cluster mode), VictoriaTraces (cluster mode), ingress-nginx, certificate-manager, kube-pires and kube-stack-prometheus
 - Insert new entry in /etc/hosts (Linux/MacOS)
 
 ## VictoriaMetrics Cluster Mode
@@ -82,6 +83,10 @@ See the [helm-apps/victoriametrics-cluster-mode/README.md](helm-apps/victoriamet
 ## VictoriaLogs Cluster Mode
 
 See the [helm-apps/victorialogs-cluster-mode/README.md](helm-apps/victorialogs-cluster-mode/README.md) file to configure VictoriaLogs cluster mode.
+
+## VictoriaTraces Cluster Mode
+
+See the [helm-apps/victoriatraces/README.md](helm-apps/victoriatraces/README.md) file to configure VictoriaTraces cluster mode.
 
 ## argocd
 

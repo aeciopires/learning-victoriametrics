@@ -52,28 +52,22 @@ This allows using various http proxies for authorization, routing and encryption
 
 ## vmui
 
-VictoriaMetrics cluster version provides UI for query troubleshooting and exploration. The UI allows exploring query results via graphs and tables.
+VictoriaLogs provides a UI for query troubleshooting and exploration.
 
-If needs add entry in ``/etc/hosts`` file:
+This chart's own ``vmauth`` (see ``vmauth.enabled`` in [values.yaml](values.yaml)) is disabled. Access is instead routed through the single ``vmauth`` deployed by [victoriametrics-cluster-mode](../victoriametrics-cluster-mode/README.md), which fronts all VictoriaMetrics/VictoriaLogs/VictoriaTraces components behind one ingress hostname and authorizes requests per-user via HTTP Basic Auth. See the ``vmauth.config.users`` entries in [../victoriametrics-cluster-mode/values.yaml](../victoriametrics-cluster-mode/values.yaml).
 
-> ATTENTION!!! You must be connected to the kind cluster
+If needs add entry in ``/etc/hosts`` file, follow the instructions in the [victoriametrics-cluster-mode README](../victoriametrics-cluster-mode/README.md#vmui).
 
-```bash
-kubectl wait --for=create ingress/victoria-logs-victoria-logs-cluster-vmauth --timeout=900s -n monitoring
-export IP=$(kubectl get ing victoria-logs-victoria-logs-cluster-vmauth -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
-sudo grep -qxF "$IP  victorialogs-cluster.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  victorialogs-cluster.mycompany.com' >> /etc/hosts"
-```
-
-- URL: https://victorialogs-cluster.mycompany.com/select/vmui/
+- URL: https://victoriametrics-cluster.mycompany.com/select/vmui/
 - Login: user-logs-select
 - password: changeme
 
 ## vmauth
 
-**vmauth** is an HTTP proxy, which can authorize, route and load balance requests across VictoriaMetrics/VictoriaLogs components or any other HTTP backends.
+**vmauth** is an HTTP proxy, which can authorize, route and load balance requests across VictoriaMetrics/VictoriaLogs/VictoriaTraces components or any other HTTP backends.
 Reference: https://docs.victoriametrics.com/victoriametrics/vmauth/
 
-- URL: https://victorialogs-cluster.mycompany.com/
+- URL: https://victoriametrics-cluster.mycompany.com/
 - Login: user-logs-select
 - password: changeme
 

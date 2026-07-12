@@ -9,14 +9,16 @@
 DOMAIN_NAME="mycompany.com"
 CLUSTER_NAME="kind-multinodes"
 KIND_CLUSTER_FILE="/tmp/kind-cluster.yaml"
-METALLB_CHART_VERSION="0.14.9"
+METALLB_CHART_VERSION="0.16.1"
 METALLB_FILE="/tmp/metallb-ingress-address.yaml"
 CERT_MANAGER_CLUSTER_ISSUE_FILE="/tmp/cert-cluster-issue.yaml"
-ARGOCD_CHART_VERSION="8.0.1"
+ARGOCD_CHART_VERSION="10.1.3"
 ARGOCD_USER="admin"
 ARGOCD_INITIAL_PASS="changeme"
 ARGOCD_DNS="argocd.${DOMAIN_NAME}"
-KUBE_PROMETHEUS_STACK_VERSION="v0.82.0"
+# Also used as the Prometheus Operator CRDs release tag applied below; must match the
+# prometheus-operator version bundled by the kube-prometheus-stack chart (see its appVersion).
+KUBE_PROMETHEUS_STACK_VERSION="v0.92.1"
 KUBE_PIRES_DNS="kube-pires.${DOMAIN_NAME}"
 ALERTMANAGER_DNS="alertmanager.${DOMAIN_NAME}"
 GRAFANA_DNS="grafana.${DOMAIN_NAME}"
@@ -40,7 +42,7 @@ if [ ! -f "$KIND_CLUSTER_FILE" ]; then
 # Metal LB in Kind: https://kind.sigs.k8s.io/docs/user/loadbalancer
 # Ingress in Kind: https://kind.sigs.k8s.io/docs/user/ingress
 
-# Config compatible with kind v0.27.0
+# Config compatible with kind v0.32.0
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
@@ -48,7 +50,7 @@ networking:
   serviceSubnet: "10.96.0.0/12"
 nodes:
   - role: control-plane
-    image: kindest/node:v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f
+    image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
     kubeadmConfigPatches:
     - |
       kind: InitConfiguration
@@ -65,9 +67,9 @@ nodes:
       listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
       protocol: TCP
   - role: worker
-    image: kindest/node:v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f
+    image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
   - role: worker
-    image: kindest/node:v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f
+    image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
 EOF
 
 else
@@ -117,7 +119,7 @@ fi
 if [ ! -f "$METALLB_FILE" ]; then
 
   # Get default gateway interface
-  KIND_ADDRESS=$(docker network inspect kind | jq '.[].IPAM | .Config | .[0].Subnet' | cut -d \" -f 2 | cut -d"." -f1-3)
+  KIND_ADDRESS=$(docker network inspect kind | jq -r '.[].IPAM.Config[] | select(.Subnet | test("^[0-9]+\\.")) | .Subnet' | cut -d"." -f1-3)
 
   # Radomize Loadbalancer IP Range
   #KIND_ADDRESS_END=$(shuf -i 100-150 -n1)
@@ -235,6 +237,9 @@ kubectl -n argocd apply -f helm-apps/victoriametrics-cluster-mode/application.ya
 
 # victorialogs cluster-mode
 kubectl -n argocd apply -f helm-apps/victorialogs-cluster-mode/application.yaml
+
+# victoriatraces cluster-mode
+kubectl -n argocd apply -f helm-apps/victoriatraces/application.yaml
 
 # Install CRDs prometheus
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagerconfigs.yaml"
