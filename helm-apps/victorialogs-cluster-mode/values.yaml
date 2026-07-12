@@ -800,7 +800,6 @@ vector:
     api:
       enabled: false
       address: 0.0.0.0:8686
-      playground: true
     sources:
       k8s:
         type: kubernetes_logs
