@@ -682,6 +682,10 @@ vmauth:
     envflag.prefix: VM_
     loggerFormat: json
     httpListenAddr: :8427
+    # Without this, vmauth only reads -auth.config once at startup, so config changes (e.g. adding
+    # a new vmauth.config.users entry) silently require a manual pod restart to take effect, even
+    # though ArgoCD reports the app as Synced/Healthy.
+    configCheckInterval: 30s
     http.maxGracefulShutdownDuration: "60s"
     memory.allowedBytes: "300MB"
     memory.allowedPercent: "60"
