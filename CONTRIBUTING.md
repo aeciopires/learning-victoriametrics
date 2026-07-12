@@ -122,7 +122,7 @@ This repository holds no application source code. It is a GitOps configuration r
     ├── kube-prometheus-stack/   # Prometheus, Grafana, Alertmanager
     ├── victoriametrics-cluster-mode/  # vminsert / vmselect / vmstorage / vmauth (shared ingress)
     ├── victorialogs-cluster-mode/     # vlinsert / vlselect / vlstorage
-    ├── victoriatraces/                # vtinsert / vtselect / vtstorage
+    ├── victoriatraces-cluster-mode/   # vtinsert / vtselect / vtstorage
     └── kube-pires/              # Sample app deployed into the `myapps` namespace
 ```
 
@@ -262,9 +262,9 @@ Every third-party component pinned in this repo (`kind` node image, MetalLB, Arg
 
 ## Adding a new VictoriaMetrics-ecosystem Helm app (e.g. VictoriaTraces)
 
-New components from the VictoriaMetrics Helm charts repository (https://github.com/VictoriaMetrics/helm-charts) follow the same recipe used for `victoriametrics-cluster-mode`, `victorialogs-cluster-mode` and `victoriatraces`:
+New components from the VictoriaMetrics Helm charts repository (https://github.com/VictoriaMetrics/helm-charts) follow the same recipe used for `victoriametrics-cluster-mode`, `victorialogs-cluster-mode` and `victoriatraces-cluster-mode`:
 
-1. Create `helm-apps/<new-app>/application.yaml`, copying an existing one (e.g. [helm-apps/victoriatraces/application.yaml](helm-apps/victoriatraces/application.yaml)) and adjusting `metadata.name`, `spec.destination.namespace`, `sources[0].chart` and `targetRevision`.
+1. Create `helm-apps/<new-app>/application.yaml`, copying an existing one (e.g. [helm-apps/victoriatraces-cluster-mode/application.yaml](helm-apps/victoriatraces-cluster-mode/application.yaml)) and adjusting `metadata.name`, `spec.destination.namespace`, `sources[0].chart` and `targetRevision`.
 2. Generate a starting `values.yaml` from the chart's own defaults rather than writing one from scratch:
 
    ```bash
@@ -276,5 +276,5 @@ New components from the VictoriaMetrics Helm charts repository (https://github.c
 3. If the chart ships its own `vmauth`, keep it disabled (`vmauth.enabled: false`) and instead add `user-<app>-insert` / `user-<app>-select` entries to `vmauth.config.users` in [helm-apps/victoriametrics-cluster-mode/values.yaml](helm-apps/victoriametrics-cluster-mode/values.yaml), pointing at the new component's internal `*.monitoring.svc.cluster.local` DNS name. This repo intentionally exposes every VictoriaMetrics/VictoriaLogs/VictoriaTraces read/write path through the single shared vmauth ingress (`victoriametrics-cluster.mycompany.com`), differentiated by HTTP Basic Auth user, instead of one ingress hostname per component.
 4. Set `nameOverride: ""` in the new `values.yaml` (rather than a chart-provided short name) so resource names follow the same `{release}-{chart}-{component}` pattern the vmauth `url_prefix` entries above depend on.
 5. Add `kubectl -n argocd apply -f helm-apps/<new-app>/application.yaml` to [run.sh](run.sh), alongside the other `victoria*` apps.
-6. Write `helm-apps/<new-app>/README.md` documenting the component architecture, the shared vmauth login, and internal write/read API DNS names/ports — follow the structure of [helm-apps/victoriatraces/README.md](helm-apps/victoriatraces/README.md).
+6. Write `helm-apps/<new-app>/README.md` documenting the component architecture, the shared vmauth login, and internal write/read API DNS names/ports — follow the structure of [helm-apps/victoriatraces-cluster-mode/README.md](helm-apps/victoriatraces-cluster-mode/README.md).
 7. Update the root [README.md](README.md) TOC/app list and [CLAUDE.md](CLAUDE.md), then run through the "Testing and upgrading software versions" steps above to validate the new app installs cleanly on `kind-multinodes`.

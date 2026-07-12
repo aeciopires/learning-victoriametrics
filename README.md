@@ -84,7 +84,7 @@ See the [helm-apps/victorialogs-cluster-mode/README.md](helm-apps/victorialogs-c
 
 ## VictoriaTraces Cluster Mode
 
-See the [helm-apps/victoriatraces/README.md](helm-apps/victoriatraces/README.md) file to configure VictoriaTraces cluster mode.
+See the [helm-apps/victoriatraces-cluster-mode/README.md](helm-apps/victoriatraces-cluster-mode/README.md) file to configure VictoriaTraces cluster mode.
 
 ## argocd
 

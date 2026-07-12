@@ -23,7 +23,7 @@ spec:
     targetRevision: 0.2.9
     helm:
       valueFiles:
-      - $values/helm-apps/victoriatraces/values.yaml
+      - $values/helm-apps/victoriatraces-cluster-mode/values.yaml
   - repoURL: https://github.com/aeciopires/learning-victoriametrics
     # Branch or tag name
     targetRevision: main

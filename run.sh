@@ -239,7 +239,7 @@ kubectl -n argocd apply -f helm-apps/victoriametrics-cluster-mode/application.ya
 kubectl -n argocd apply -f helm-apps/victorialogs-cluster-mode/application.yaml
 
 # victoriatraces cluster-mode
-kubectl -n argocd apply -f helm-apps/victoriatraces/application.yaml
+kubectl -n argocd apply -f helm-apps/victoriatraces-cluster-mode/application.yaml
 
 # Install CRDs prometheus
 kubectl apply --server-side -f "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/$KUBE_PROMETHEUS_STACK_VERSION/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagerconfigs.yaml"

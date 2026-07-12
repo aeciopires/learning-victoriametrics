@@ -15,7 +15,7 @@ Date: 2026/07/12
 
 > This homelab was tested in Ubuntu 22.04 64 bits
 
-- Added VictoriaTraces cluster mode (`helm-apps/victoriatraces`), exposed through the shared vmauth from VictoriaMetrics cluster mode (`user-traces-insert` / `user-traces-select` users) instead of its own ingress, following the same pattern as VictoriaLogs
+- Added VictoriaTraces cluster mode (`helm-apps/victoriatraces-cluster-mode`), exposed through the shared vmauth from VictoriaMetrics cluster mode (`user-traces-insert` / `user-traces-select` users) instead of its own ingress, following the same pattern as VictoriaLogs
 - Fixed VictoriaLogs README documentation that referenced a separate `vmauth`/ingress hostname that was never actually created; it now correctly documents the shared `victoriametrics-cluster.mycompany.com` ingress
 - Documentation updated: added a "Testing and upgrading software versions" and an "Adding a new VictoriaMetrics-ecosystem Helm app" section to CONTRIBUTING.md
 - Bump software versions:
