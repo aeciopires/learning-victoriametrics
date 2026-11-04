@@ -6,7 +6,7 @@ global:
     registry: ""
     vm:
       # -- Image tag for all vm charts
-      tag: "v1.147.0"
+      tag: "v1.155.0"
   # -- Openshift security context compatibility configuration
   compatibility:
     openshift:

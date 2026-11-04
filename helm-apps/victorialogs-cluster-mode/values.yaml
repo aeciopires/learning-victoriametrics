@@ -18,7 +18,7 @@ printNotes: true
 common:
   # -- common for all components image configuration
   image:
-    tag: "v1.51.0"
+    tag: "v1.53.0"
 
 serviceAccount:
   # -- Specifies whether a service account should be created

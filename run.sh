@@ -9,16 +9,16 @@
 DOMAIN_NAME="mycompany.com"
 CLUSTER_NAME="kind-multinodes"
 KIND_CLUSTER_FILE="/tmp/kind-cluster.yaml"
-METALLB_CHART_VERSION="0.16.1"
+METALLB_CHART_VERSION="0.16.2"
 METALLB_FILE="/tmp/metallb-ingress-address.yaml"
 CERT_MANAGER_CLUSTER_ISSUE_FILE="/tmp/cert-cluster-issue.yaml"
-ARGOCD_CHART_VERSION="10.1.3"
+ARGOCD_CHART_VERSION="10.12.1"
 ARGOCD_USER="admin"
 ARGOCD_INITIAL_PASS="changeme"
 ARGOCD_DNS="argocd.${DOMAIN_NAME}"
 # Also used as the Prometheus Operator CRDs release tag applied below; must match the
 # prometheus-operator version bundled by the kube-prometheus-stack chart (see its appVersion).
-KUBE_PROMETHEUS_STACK_VERSION="v0.92.1"
+KUBE_PROMETHEUS_STACK_VERSION="v0.94.2"
 KUBE_PIRES_DNS="kube-pires.${DOMAIN_NAME}"
 ALERTMANAGER_DNS="alertmanager.${DOMAIN_NAME}"
 GRAFANA_DNS="grafana.${DOMAIN_NAME}"
@@ -42,7 +42,7 @@ if [ ! -f "$KIND_CLUSTER_FILE" ]; then
 # Metal LB in Kind: https://kind.sigs.k8s.io/docs/user/loadbalancer
 # Ingress in Kind: https://kind.sigs.k8s.io/docs/user/ingress
 
-# Config compatible with kind v0.32.0
+# Config compatible with kind v0.33.0
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
@@ -50,7 +50,7 @@ networking:
   serviceSubnet: "10.96.0.0/12"
 nodes:
   - role: control-plane
-    image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
+    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
     kubeadmConfigPatches:
     - |
       kind: InitConfiguration
@@ -67,9 +67,9 @@ nodes:
       listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
       protocol: TCP
   - role: worker
-    image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
+    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
   - role: worker
-    image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
+    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
 EOF
 
 else

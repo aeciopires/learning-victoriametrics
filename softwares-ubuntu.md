@@ -90,7 +90,7 @@ Install ``argocd-cli`` using ``asdf``:
 > Before proceeding, make sure you have installed the command [asdf](#asdf).
 
 ```bash
-VERSION=3.4.5
+VERSION=3.6.1
 asdf plugin-add argocd https://github.com/beardix/asdf-argocd.git
 asdf list all argocd
 asdf install argocd $VERSION
@@ -152,7 +152,7 @@ Run the following commands to install cmctl:
 > Before proceeding, make sure you have installed the command [go](#go).
 
 ```bash
-OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -sSL -o /usr/local/bin/cmctl "https://github.com/cert-manager/cmctl/releases/download/v2.5.0/cmctl_${OS}_${ARCH}"
+OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -sSL -o /usr/local/bin/cmctl "https://github.com/cert-manager/cmctl/releases/download/v2.6.2/cmctl_${OS}_${ARCH}"
 sudo chmod +x /usr/local/bin/cmctl
 ```
 
@@ -169,7 +169,7 @@ Run the following commands to install helm:
 Reference: https://helm.sh/docs/
 
 ```bash
-VERSION="3.21.2"
+VERSION="3.22.1"
 
 asdf plugin list all | grep helm
 asdf plugin add helm https://github.com/Antiarchitect/asdf-helm.git
@@ -189,7 +189,7 @@ Run the following commands to install the ``helm-diff`` plugin.
 Reference: https://github.com/databus23/helm-diff
 
 ```bash
-helm plugin install https://github.com/databus23/helm-diff --version v3.15.10
+helm plugin install https://github.com/databus23/helm-diff --version v3.15.15
 ```
 
 # helm-secrets - Plugin
@@ -199,7 +199,7 @@ Run the following commands to install the ``helm-secrets`` plugin.
 Reference: https://github.com/jkroepke/helm-secrets
 
 ```bash
-helm plugin install https://github.com/jkroepke/helm-secrets --version v4.7.7
+helm plugin install https://github.com/jkroepke/helm-secrets --version v4.7.10
 ```
 
 # kubectl
@@ -209,7 +209,7 @@ Run the following commands.
 Reference: https://kubernetes.io/docs/reference/kubectl/overview/
 
 ```bash
-VERSION_OPTION_1="1.36.2"
+VERSION_OPTION_1="1.37.2"
 
 asdf plugin list all | grep kubectl
 asdf plugin add kubectl https://github.com/asdf-community/asdf-kubectl.git
@@ -233,7 +233,7 @@ To install kind, run the following commands.
 > Before proceeding, make sure you have installed the command [asdf](#asdf).
 
 ```bash
-VERSION="0.32.0"
+VERSION="0.33.0"
 asdf plugin list all | grep kind
 asdf plugin add kind https://github.com/johnlayton/asdf-kind.git
 asdf latest kind
@@ -255,7 +255,7 @@ cat << EOF > $HOME/kind-3nodes.yaml
 # Metal LB in Kind: https://kind.sigs.k8s.io/docs/user/loadbalancer
 # Ingress in Kind: https://kind.sigs.k8s.io/docs/user/ingress
 
-# Config compatible with kind v0.32.0
+# Config compatible with kind v0.33.0
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
@@ -263,7 +263,7 @@ networking:
   serviceSubnet: "10.96.0.0/12"
 nodes:
   - role: control-plane
-    image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
+    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
     kubeadmConfigPatches:
     - |
       kind: InitConfiguration
@@ -280,9 +280,9 @@ nodes:
       listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
       protocol: TCP
   - role: worker
-    image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
+    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
   - role: worker
-    image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
+    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
 EOF
 ```
 
