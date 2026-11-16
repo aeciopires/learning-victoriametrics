@@ -12,6 +12,11 @@ kind: HTTPRoute
 metadata:
   name: argocd-server
   namespace: argocd
+  annotations:
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
+    # After the Gateway (wave 4): ArgoCD only reports an HTTPRoute as Healthy once a Gateway
+    # accepts it, so in an earlier wave it would block the sync of the Gateway itself
+    argocd.argoproj.io/sync-wave: "5"
 spec:
   parentRefs:
   - name: mycompany-gateway

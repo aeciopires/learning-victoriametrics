@@ -51,7 +51,7 @@ flowchart LR
 | [03-http-redirect.yaml](manifests/03-http-redirect.yaml) | `HTTPRoute/http-to-https-redirect` | Redirects HTTP to HTTPS |
 | [04-argocd-httproute.yaml](manifests/04-argocd-httproute.yaml) | `HTTPRoute/argocd-server` (namespace `argocd`) | ArgoCD UI/API. Declared here because ArgoCD is installed before the Gateway API CRDs exist |
 
-The manifests use `argocd.argoproj.io/sync-wave` annotations, so the CA is ready before the CA issuer and the Gateway are created.
+The manifests use `argocd.argoproj.io/sync-wave` annotations, so the CA is ready before the CA issuer and the Gateway are created, and the HTTPRoutes are created only after the Gateway (wave 5). ArgoCD only reports an `HTTPRoute` as healthy once a Gateway accepts it, so a route in an earlier wave than the Gateway would block the sync forever.
 
 ## HTTPRoutes of the applications
 
