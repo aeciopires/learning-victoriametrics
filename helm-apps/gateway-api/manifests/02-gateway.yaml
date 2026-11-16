@@ -1,0 +1,67 @@
+# Gateway API resources served by Envoy Gateway.
+#
+# GatewayClass -> which controller implements the Gateways (Envoy Gateway)
+# Gateway      -> the entrypoint (Envoy proxy exposed by a LoadBalancer Service, IP from MetalLB)
+#
+# References:
+# https://gateway-api.sigs.k8s.io/api-types/gatewayclass/
+# https://gateway-api.sigs.k8s.io/api-types/gateway/
+# https://gateway.envoyproxy.io/docs/tasks/quickstart/
+# https://cert-manager.io/docs/usage/gateway/
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: envoy-gateway
+  annotations:
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: mycompany-gateway
+  namespace: envoy-gateway-system
+  annotations:
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
+    argocd.argoproj.io/sync-wave: "4"
+    # cert-manager (gateway-shim) creates a Certificate for each HTTPS listener,
+    # using the listener hostname and the secret in certificateRefs
+    cert-manager.io/cluster-issuer: mycompany-local-ca
+spec:
+  gatewayClassName: envoy-gateway
+  listeners:
+  # Plain HTTP: only the HTTP -> HTTPS redirect route (03-http-redirect.yaml) attaches here
+  - name: http
+    protocol: HTTP
+    port: 80
+    hostname: "*.mycompany.com"
+    allowedRoutes:
+      namespaces:
+        from: Same
+  # HTTPS: TLS terminated at the Gateway with a wildcard certificate signed by the local CA
+  - name: https
+    protocol: HTTPS
+    port: 443
+    hostname: "*.mycompany.com"
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: wildcard-mycompany-com-tls
+    # Only namespaces of this lab can attach routes to this listener
+    allowedRoutes:
+      kinds:
+      - kind: HTTPRoute
+      namespaces:
+        from: Selector
+        selector:
+          matchExpressions:
+          - key: kubernetes.io/metadata.name
+            operator: In
+            values:
+            - argocd
+            - monitoring
+            - myapps

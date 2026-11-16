@@ -12,7 +12,7 @@
 # Requirements
 
 - Install all packages and binaries following the instructions on the [REQUIREMENTS.md](../../REQUIREMENTS.md) file.
-- Create the cluster following the instructions on the [README.md](../../README.md#create-the-cluster-and-deploy-applications) file.
+- Create the cluster following the instructions on the [README.md](../../README.md#create-cluster-and-deploy-applications) file.
 
 # Configure ArgoCD
 
@@ -22,13 +22,13 @@ List the resources.
 kubectl get all -n argocd
 ```
 
-If needs add entry in ``/etc/hosts`` file:
+If needs add entry in ``/etc/hosts`` file (every hostname points to the address of the Envoy Gateway, see [gateway-api](../gateway-api/README.md)):
 
 > ATTENTION!!! You must be connected to the kind cluster
 
 ```bash
 # Add entry in /etc/hosts for argocd
-export IP=$(kubectl get ing argocd -n argocd -o json | jq -r .status.loadBalancer.ingress[].ip)
+export IP=$(kubectl get gateway mycompany-gateway -n envoy-gateway-system -o jsonpath='{.status.addresses[0].value}')
 sudo grep -qxF "$IP  argocd.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  argocd.mycompany.com' >> /etc/hosts"
 ```
 

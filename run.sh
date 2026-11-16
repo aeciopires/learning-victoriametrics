@@ -24,7 +24,13 @@ ALERTMANAGER_DNS="alertmanager.${DOMAIN_NAME}"
 GRAFANA_DNS="grafana.${DOMAIN_NAME}"
 PROMETHEUS_DNS="prometheus.${DOMAIN_NAME}"
 VICTORIAMETRICS_CLUSTER_MODE_DNS="victoriametrics-cluster.${DOMAIN_NAME}"
-VICTORIALOGS_CLUSTER_MODE_DNS="victorialogs-cluster.${DOMAIN_NAME}"
+# Gateway API Gateway (Envoy Gateway) that exposes every application (helm-apps/gateway-api)
+GATEWAY_NAME="mycompany-gateway"
+GATEWAY_NAMESPACE="envoy-gateway-system"
+# Minimum inotify limits recommended by kind for multi-node clusters
+# https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
+INOTIFY_MAX_USER_WATCHES="524288"
+INOTIFY_MAX_USER_INSTANCES="512"
 #------------------------
 
 
@@ -44,6 +50,24 @@ echo "[INFO] Using Helm $HELM_VERSION"
 
 
 #---------------------------------------
+# Checking inotify limits (Linux only)
+#---------------------------------------
+
+# kind nodes share the host kernel inotify limits. With the default values (128 instances)
+# pods like Vector (victorialogs) crash with "Too many open files".
+# This raises the limits only until the next reboot. To make it permanent, see softwares-ubuntu.md.
+if [ "$(uname -s)" = "Linux" ]; then
+  CURRENT_WATCHES=$(cat /proc/sys/fs/inotify/max_user_watches)
+  CURRENT_INSTANCES=$(cat /proc/sys/fs/inotify/max_user_instances)
+  if [ "$CURRENT_WATCHES" -lt "$INOTIFY_MAX_USER_WATCHES" ] || [ "$CURRENT_INSTANCES" -lt "$INOTIFY_MAX_USER_INSTANCES" ]; then
+    echo "[WARNING] inotify limits too low for kind (max_user_watches=$CURRENT_WATCHES, max_user_instances=$CURRENT_INSTANCES). Raising them with sudo until the next reboot."
+    sudo sysctl -w "fs.inotify.max_user_watches=$INOTIFY_MAX_USER_WATCHES" "fs.inotify.max_user_instances=$INOTIFY_MAX_USER_INSTANCES" || exit 1
+  fi
+fi
+#-----------------------------------------------
+
+
+#---------------------------------------
 # Creating kind Kubernetes cluster
 #---------------------------------------
 
@@ -54,7 +78,7 @@ if [ ! -f "$KIND_CLUSTER_FILE" ]; then
 # Kind release image: https://github.com/kubernetes-sigs/kind/releases
 # Configuration: https://kind.sigs.k8s.io/docs/user/configuration/
 # Metal LB in Kind: https://kind.sigs.k8s.io/docs/user/loadbalancer
-# Ingress in Kind: https://kind.sigs.k8s.io/docs/user/ingress
+# Envoy Gateway in Kind: https://gateway.envoyproxy.io/docs/tasks/quickstart/
 
 # Config compatible with kind v0.33.0
 kind: Cluster
@@ -71,15 +95,9 @@ nodes:
       nodeRegistration:
         kubeletExtraArgs:
           node-labels: "nodeapp=loadbalancer"
-    extraPortMappings:
-    - containerPort: 80
-      hostPort: 80
-      listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
-      protocol: TCP
-    - containerPort: 443
-      hostPort: 443
-      listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
-      protocol: TCP
+    # No extraPortMappings (hostPort 80/443): the applications are reached through the
+    # LoadBalancer IP of the Envoy Gateway (MetalLB), so this cluster doesn't conflict
+    # with other kind clusters already using the host ports 80/443
   - role: worker
     image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
   - role: worker
@@ -94,7 +112,17 @@ fi
 if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
   echo "[WARNING] Kind cluster already exists"
 else
-  kind create cluster --name "$CLUSTER_NAME" --config "$KIND_CLUSTER_FILE"
+  if ! kind create cluster --name "$CLUSTER_NAME" --config "$KIND_CLUSTER_FILE"; then
+    echo "[ERROR] Failed to create kind cluster $CLUSTER_NAME (are ports 80/443 already used by another kind cluster?)"
+    exit 1
+  fi
+fi
+
+# Make sure every kubectl/helm command below targets the kind cluster,
+# never the previously active context (e.g. another cluster)
+if ! kubectl config use-context "kind-${CLUSTER_NAME}"; then
+  echo "[ERROR] kubectl context kind-${CLUSTER_NAME} not found"
+  exit 1
 fi
 #-----------------------------------------------
 
@@ -212,20 +240,26 @@ fi
 # Install/Sync other apps using ArgoCD
 #---------------------------------------
 
-# ingress-nginx
-kubectl -n argocd apply -f helm-apps/ingress-nginx/application.yaml
+# Envoy Gateway (Gateway API implementation). Also installs the Gateway API CRDs,
+# which must exist before cert-manager starts with Gateway API support enabled.
+kubectl -n argocd apply -f helm-apps/envoy-gateway/application.yaml
+echo "[INFO] Waiting for install envoy-gateway"
+kubectl wait --for=create crd/gateways.gateway.networking.k8s.io --timeout=900s
+kubectl wait --for=condition=Established crd/gateways.gateway.networking.k8s.io crd/httproutes.gateway.networking.k8s.io --timeout=300s
+kubectl wait --for=create deployment/envoy-gateway --timeout=900s -n "$GATEWAY_NAMESPACE"
+kubectl wait --for=condition=Available deployment/envoy-gateway --timeout=900s -n "$GATEWAY_NAMESPACE"
 
 # certificate-manager
 kubectl -n argocd apply -f helm-apps/cert-manager/application.yaml
-# Creating a ClusterIssuer
-if [ ! -f "$CERT_MANAGER_CLUSTER_ISSUE_FILE" ]; then
 
-  cat << EOF > "$CERT_MANAGER_CLUSTER_ISSUE_FILE"
+# Let's Encrypt ClusterIssuer (HTTP-01 challenge solved through the Gateway with an HTTPRoute).
+# Example only: Let's Encrypt can't validate the private domain used in this lab and the email must be valid.
+# The Gateway uses the local CA ClusterIssuer "mycompany-local-ca" (helm-apps/gateway-api) instead.
+cat << EOF2 > "$CERT_MANAGER_CLUSTER_ISSUE_FILE"
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: letsencrypt-prod-http01
-  namespace: cert-manager
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
@@ -234,17 +268,27 @@ spec:
       name: letsencrypt-prod-http01
     solvers:
     - http01:
-        ingress:
-          class: nginx
-EOF
-else
-  echo "[WARNING] $CERT_MANAGER_CLUSTER_ISSUE_FILE file already exists"
-fi
+        gatewayHTTPRoute:
+          parentRefs:
+          - name: $GATEWAY_NAME
+            namespace: $GATEWAY_NAMESPACE
+            kind: Gateway
+            sectionName: http
+EOF2
 
 echo "[INFO] Waiting for install cert-manager"
-# Reference: https://cert-manager.io/v1.7-docs/installation/verify/
+# Reference: https://cert-manager.io/docs/installation/verify/
 cmctl check api --wait=5m
 kubectl apply -f "$CERT_MANAGER_CLUSTER_ISSUE_FILE"
+
+# Gateway API resources: local CA, GatewayClass, Gateway, HTTP -> HTTPS redirect and ArgoCD HTTPRoute
+kubectl -n argocd apply -f helm-apps/gateway-api/application.yaml
+echo "[INFO] Waiting for the Gateway $GATEWAY_NAME"
+kubectl wait --for=create "gateway/$GATEWAY_NAME" --timeout=900s -n "$GATEWAY_NAMESPACE"
+kubectl wait --for=condition=Programmed "gateway/$GATEWAY_NAME" --timeout=900s -n "$GATEWAY_NAMESPACE"
+
+# metrics-server (resource metrics API used by the HorizontalPodAutoscalers and "kubectl top")
+kubectl -n argocd apply -f helm-apps/metrics-server/application.yaml
 
 # victoriametrics cluster-mode
 kubectl -n argocd apply -f helm-apps/victoriametrics-cluster-mode/application.yaml
@@ -273,37 +317,27 @@ kubectl -n argocd apply -f helm-apps/kube-prometheus-stack/application.yaml
 # kube-pires
 kubectl -n argocd apply -f helm-apps/kube-pires/application.yaml
 
-# Add entry in /etc/hosts for kube-pires
-kubectl wait --for=create ingress/kube-pires --timeout=900s -n myapps
-export IP=$(kubectl get ing kube-pires -n myapps -o json | jq -r .status.loadBalancer.ingress[].ip)
-sudo grep -qxF "$IP  $KUBE_PIRES_DNS" /etc/hosts || sudo sh -c "echo '$IP  $KUBE_PIRES_DNS' >> /etc/hosts"
+# Wait for the HTTPRoutes of every application to be accepted by the Gateway
+echo "[INFO] Waiting for the HTTPRoutes"
+for ROUTE in argocd/argocd-server myapps/kube-pires monitoring/monitor-mycompany-alertmanager \
+             monitoring/monitor-grafana monitoring/monitor-mycompany-prometheus \
+             monitoring/victoria-metrics-victoria-metrics-cluster-vmauth; do
+  kubectl wait --for=create "httproute/${ROUTE#*/}" --timeout=900s -n "${ROUTE%%/*}"
+  kubectl wait --for=jsonpath='{.status.parents[0].conditions[?(@.type=="Accepted")].status}'=True \
+    "httproute/${ROUTE#*/}" --timeout=300s -n "${ROUTE%%/*}"
+done
 
-# Add entry in /etc/hosts for argocd
-kubectl wait --for=create ingress/argocd-server --timeout=900s -n argocd
-export IP=$(kubectl get ing argocd-server -n argocd -o json | jq -r .status.loadBalancer.ingress[].ip)
-sudo grep -qxF "$IP  $ARGOCD_DNS" /etc/hosts || sudo sh -c "echo '$IP  $ARGOCD_DNS' >> /etc/hosts"
+# Add entries in /etc/hosts: every hostname points to the address of the Gateway (LoadBalancer IP from MetalLB)
+GATEWAY_IP=$(kubectl get gateway "$GATEWAY_NAME" -n "$GATEWAY_NAMESPACE" -o jsonpath='{.status.addresses[0].value}')
+if [ -z "$GATEWAY_IP" ]; then
+  echo "[ERROR] Gateway $GATEWAY_NAME has no address, /etc/hosts not updated"
+  exit 1
+fi
+for DNS in "$KUBE_PIRES_DNS" "$ARGOCD_DNS" "$ALERTMANAGER_DNS" "$GRAFANA_DNS" "$PROMETHEUS_DNS" "$VICTORIAMETRICS_CLUSTER_MODE_DNS"; do
+  sudo grep -qxF "$GATEWAY_IP  $DNS" /etc/hosts || sudo sh -c "echo '$GATEWAY_IP  $DNS' >> /etc/hosts"
+done
 
-
-# Add entry in /etc/hosts for alertmanager
-kubectl wait --for=create ingress/monitor-mycompany-alertmanager --timeout=900s -n monitoring
-export IP=$(kubectl get ing monitor-mycompany-alertmanager -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
-sudo grep -qxF "$IP  $ALERTMANAGER_DNS" /etc/hosts || sudo sh -c "echo '$IP  $ALERTMANAGER_DNS' >> /etc/hosts"
-
-
-# Add entry in /etc/hosts for grafana
-kubectl wait --for=create ingress/monitor-grafana --timeout=900s -n monitoring
-export IP=$(kubectl get ing monitor-grafana -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
-sudo grep -qxF "$IP  $GRAFANA_DNS" /etc/hosts || sudo sh -c "echo '$IP  $GRAFANA_DNS' >> /etc/hosts"
-
-
-# Add entry in /etc/hosts for prometheus
-kubectl wait --for=create ingress/monitor-mycompany-prometheus --timeout=900s -n monitoring
-export IP=$(kubectl get ing monitor-mycompany-prometheus -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
-sudo grep -qxF "$IP  $PROMETHEUS_DNS" /etc/hosts || sudo sh -c "echo '$IP  $PROMETHEUS_DNS' >> /etc/hosts"
-
-
-# Add entry in /etc/hosts for victoriametrics-cluster-mode
-kubectl wait --for=create ingress/victoria-metrics-victoria-metrics-cluster-vmauth --timeout=900s -n monitoring
-export IP=$(kubectl get ing victoria-metrics-victoria-metrics-cluster-vmauth -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
-sudo grep -qxF "$IP  $VICTORIAMETRICS_CLUSTER_MODE_DNS" /etc/hosts || sudo sh -c "echo '$IP  $VICTORIAMETRICS_CLUSTER_MODE_DNS' >> /etc/hosts"
+echo "[INFO] Applications exposed by the Gateway $GATEWAY_NAME ($GATEWAY_IP) over HTTPS."
+echo "[INFO] Trust the local CA to avoid browser warnings, see README.md:"
+echo "kubectl -n cert-manager get secret mycompany-local-ca -o jsonpath='{.data.ca\\.crt}' | base64 -d > mycompany-local-ca.crt"
 #-----------------------------------------------

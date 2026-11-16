@@ -17,7 +17,7 @@
 # Requirements
 
 - Install all packages and binaries following the instructions on the [REQUIREMENTS.md](../../REQUIREMENTS.md) file.
-- Create the cluster following the instructions on the [README.md](../../README.md#create-the-cluster-and-deploy-applications) file.
+- Create the cluster following the instructions on the [README.md](../../README.md#create-cluster-and-deploy-applications) file.
 
 # Architecture
 
@@ -42,13 +42,13 @@ Each service may scale independently and may run on the most suitable hardware. 
 
 VictoriaMetrics cluster version provides UI for query troubleshooting and exploration. The UI allows exploring query results via graphs and tables.
 
-If needs add entry in ``/etc/hosts`` file:
+If needs add entry in ``/etc/hosts`` file (every hostname points to the address of the Envoy Gateway, see [gateway-api](../gateway-api/README.md)):
 
 > ATTENTION!!! You must be connected to the kind cluster
 
 ```bash
-kubectl wait --for=create ingress/victoria-metrics-victoria-metrics-cluster-vmauth --timeout=900s -n monitoring
-export IP=$(kubectl get ing victoria-metrics-victoria-metrics-cluster-vmauth -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+kubectl wait --for=jsonpath='{.status.parents[0].conditions[?(@.type=="Accepted")].status}'=True httproute/victoria-metrics-victoria-metrics-cluster-vmauth --timeout=900s -n monitoring
+export IP=$(kubectl get gateway mycompany-gateway -n envoy-gateway-system -o jsonpath='{.status.addresses[0].value}')
 sudo grep -qxF "$IP  victoriametrics-cluster.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  victoriametrics-cluster.mycompany.com' >> /etc/hosts"
 ```
 

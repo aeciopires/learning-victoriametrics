@@ -13,6 +13,7 @@
 - [helm-secrets - Plugin](#helm-secrets---plugin)
 - [kubectl](#kubectl)
 - [kind](#kind)
+  - [inotify limits](#inotify-limits)
 
 <!-- TOC -->
 
@@ -335,3 +336,21 @@ References:
 - https://kind.sigs.k8s.io/docs/user/quick-start/
 - https://github.com/kubernetes-sigs/kind/releases
 - https://kubernetes.io/blog/2020/05/21/wsl-docker-kubernetes-on-the-windows-desktop/#kind-kubernetes-made-easy-in-a-container
+
+## inotify limits
+
+The kind nodes share the inotify limits of the host kernel. The Ubuntu defaults (``max_user_instances=128``) are too low for multi-node clusters, and pods like Vector (VictoriaLogs) crash with ``Too many open files``.
+
+``run.sh`` raises the limits with ``sudo sysctl -w`` when they are too low, but only until the next reboot. To make the change permanent:
+
+```bash
+cat << EOF | sudo tee /etc/sysctl.d/99-kind-inotify.conf
+fs.inotify.max_user_watches = 524288
+fs.inotify.max_user_instances = 512
+EOF
+
+sudo sysctl --system
+sysctl fs.inotify.max_user_watches fs.inotify.max_user_instances
+```
+
+Reference: https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files

@@ -1,0 +1,29 @@
+# HTTPRoute for the ArgoCD UI/API.
+#
+# ArgoCD is installed by run.sh with "helm upgrade --install" BEFORE Envoy Gateway (and the
+# Gateway API CRDs) exist, so its route can't come from the argo-cd chart (server.httproute)
+# and is declared here instead.
+#
+# ArgoCD runs with "server.insecure: true" (helm-apps/argocd/values.yaml): TLS is terminated
+# at the Gateway and the backend is plain HTTP.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  parentRefs:
+  - name: mycompany-gateway
+    namespace: envoy-gateway-system
+    sectionName: https
+  hostnames:
+  - argocd.mycompany.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: argocd-server
+      port: 80

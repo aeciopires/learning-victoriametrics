@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: envoy-gateway
+  namespace: argocd
+  annotations:
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
+    argocd.argoproj.io/sync-wave: "6"
+  finalizers:
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/app_deletion/
+    - resources-finalizer.argocd.argoproj.io
+# https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/
+# https://gateway.envoyproxy.io/docs/install/install-argocd/
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: envoy-gateway-system
+  # https://argo-cd.readthedocs.io/en/stable/user-guide/projects/
+  project: default
+  # https://argo-cd.readthedocs.io/en/stable/user-guide/multiple_sources/
+  sources:
+  # Helm chart published as an OCI artifact (oci://docker.io/envoyproxy/gateway-helm).
+  # It also installs the Gateway API CRDs (standard channel) and the Envoy Gateway CRDs.
+  - repoURL: docker.io/envoyproxy
+    chart: gateway-helm
+    targetRevision: v1.10.0
+    helm:
+      valueFiles:
+      - $values/helm-apps/envoy-gateway/values.yaml
+  - repoURL: https://github.com/aeciopires/learning-victoriametrics
+    # Branch or tag name
+    targetRevision: main
+    ref: values
+  # https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-options/
+    syncOptions:
+    - CreateNamespace=true
+    # The Gateway API/Envoy Gateway CRDs are too big for client-side apply
+    # (metadata.annotations limit), so Server-Side Apply is required
+    - ServerSideApply=true

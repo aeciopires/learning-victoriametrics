@@ -10,9 +10,12 @@
   - [VictoriaMetrics Cluster Mode](#victoriametrics-cluster-mode)
   - [VictoriaLogs Cluster Mode](#victorialogs-cluster-mode)
   - [VictoriaTraces Cluster Mode](#victoriatraces-cluster-mode)
+  - [Accessing the applications (Gateway API)](#accessing-the-applications-gateway-api)
   - [argocd](#argocd)
-  - [ingress-nginx](#ingress-nginx)
+  - [envoy-gateway](#envoy-gateway)
+  - [gateway-api](#gateway-api)
   - [cert-manager](#cert-manager)
+  - [metrics-server](#metrics-server)
   - [kube-prometheus-stack](#kube-prometheus-stack)
   - [kube-pires](#kube-pires)
 - [VictoriaMetrics and VictoriaLogs Architecture](#victoriametrics-and-victorialogs-architecture)
@@ -99,10 +102,33 @@ make up
 
 Actions performed:
 
-- Check requirements
+- Check requirements (including Helm 4)
+- Raise the inotify limits of the host if they are too low for kind (Linux only, with ``sudo``, until the next reboot). See [softwares-ubuntu.md](softwares-ubuntu.md#inotify-limits) to make it permanent
 - Create kind Kubernetes cluster
-- Install helm apps: MetalLB, VictoriaMetrics (cluster mode), VictoriaLogs (cluster mode), VictoriaTraces (cluster mode), ingress-nginx, certificate-manager, kube-pires and kube-stack-prometheus
-- Insert new entry in /etc/hosts (Linux/MacOS)
+- Install MetalLB and ArgoCD with Helm
+- Install with ArgoCD: Envoy Gateway (Gateway API), cert-manager, Gateway API resources (local CA, Gateway, HTTPRoutes), metrics-server, VictoriaMetrics (cluster mode), VictoriaLogs (cluster mode), VictoriaTraces (cluster mode), kube-prometheus-stack and kube-pires
+- Insert new entries in /etc/hosts (Linux/MacOS) pointing to the address of the Gateway
+
+## Accessing the applications (Gateway API)
+
+All applications are exposed over HTTPS by a single [Gateway API](https://gateway-api.sigs.k8s.io/) `Gateway` implemented by [Envoy Gateway](https://gateway.envoyproxy.io/). Each application has its own `HTTPRoute`, HTTP is redirected to HTTPS and the TLS certificate (`*.mycompany.com`) is signed by a local CA managed by cert-manager.
+
+| URL | Application |
+|---|---|
+| https://argocd.mycompany.com | ArgoCD |
+| https://grafana.mycompany.com | Grafana |
+| https://prometheus.mycompany.com | Prometheus |
+| https://alertmanager.mycompany.com | Alertmanager |
+| https://victoriametrics-cluster.mycompany.com | vmauth (VictoriaMetrics, VictoriaLogs and VictoriaTraces, with HTTP Basic Auth) |
+| https://kube-pires.mycompany.com | kube-pires |
+
+To avoid browser certificate warnings, trust the local CA:
+
+```bash
+kubectl -n cert-manager get secret mycompany-local-ca -o jsonpath='{.data.ca\.crt}' | base64 -d > mycompany-local-ca.crt
+```
+
+See [helm-apps/gateway-api/README.md](helm-apps/gateway-api/README.md) for the architecture, the Gateway API features used, how to trust the CA in the operating system and troubleshooting.
 
 ## VictoriaMetrics Cluster Mode
 
@@ -120,17 +146,25 @@ See the [helm-apps/victoriatraces-cluster-mode/README.md](helm-apps/victoriatrac
 
 See the [helm-apps/argocd/README.md](helm-apps/argocd/README.md)
 
-## ingress-nginx
+## envoy-gateway
 
-See the [helm-apps/ingress-nginx/README.md](helm-apps/ingress-nginx/README.md)
+See the [helm-apps/envoy-gateway/README.md](helm-apps/envoy-gateway/README.md)
+
+## gateway-api
+
+See the [helm-apps/gateway-api/README.md](helm-apps/gateway-api/README.md)
 
 ## cert-manager
 
 See the [helm-apps/cert-manager/README.md](helm-apps/cert-manager/README.md)
 
+## metrics-server
+
+See the [helm-apps/metrics-server/README.md](helm-apps/metrics-server/README.md)
+
 ## kube-prometheus-stack
 
-See the [helm-apps/kube-stack-prometheus/README.md](helm-apps/kube-prometheus-stack/README.md)
+See the [helm-apps/kube-prometheus-stack/README.md](helm-apps/kube-prometheus-stack/README.md)
 
 ## kube-pires
 
@@ -143,6 +177,8 @@ See the [helm-apps/kube-pires/README.md](helm-apps/kube-pires/README.md)
 # Tools used
 
 ![tools-used](images/tools-used.png)
+
+> **NOTE:** the images in this section and in [Request workflow](#request-workflow) still show ingress-nginx. Since version 1.4.0, the requests enter the cluster through the Envoy Gateway (Gateway API) and the TLS certificate comes from a local CA. See the updated diagram in [helm-apps/gateway-api/README.md](helm-apps/gateway-api/README.md#how-the-applications-are-exposed).
 
 # Request workflow
 

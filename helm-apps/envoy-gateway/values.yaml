@@ -1,0 +1,39 @@
+# Values for the Envoy Gateway Helm chart (oci://docker.io/envoyproxy/gateway-helm)
+# Generated from "helm show values oci://docker.io/envoyproxy/gateway-helm --version v1.10.0" and trimmed down.
+#
+# The Gateway API resources (GatewayClass, Gateway, HTTP->HTTPS redirect, ArgoCD HTTPRoute)
+# are declared in helm-apps/gateway-api/manifests.
+
+global:
+  images:
+    envoyGateway:
+      # -- Full image for the Envoy Gateway control plane Deployment installed by this chart.
+      image: docker.io/envoyproxy/gateway:v1.10.0
+      pullPolicy: IfNotPresent
+
+# Values for CRDs dependency
+crds:
+  # -- Install Envoy Gateway CRDs, Gateway API CRDs, and Gateway API safe upgrade policy resources.
+  enabled: true
+
+deployment:
+  envoyGateway:
+    resources:
+      limits:
+        memory: 1024Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  replicas: 1
+
+config:
+  # -- EnvoyGateway configuration. See https://gateway.envoyproxy.io/docs/api/extension_types/#envoygateway
+  envoyGateway:
+    gateway:
+      # Must match spec.controllerName of the GatewayClass (helm-apps/gateway-api/manifests/02-gateway.yaml)
+      controllerName: gateway.envoyproxy.io/gatewayclass-controller
+    provider:
+      type: Kubernetes
+    logging:
+      level:
+        default: info

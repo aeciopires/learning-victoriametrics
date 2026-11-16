@@ -1,0 +1,29 @@
+# Values for the metrics-server Helm chart (https://kubernetes-sigs.github.io/metrics-server/)
+# Generated from "helm show values metrics-server/metrics-server --version 3.14.0" and trimmed down.
+#
+# metrics-server provides the resource metrics API (metrics.k8s.io) used by the
+# HorizontalPodAutoscalers (e.g. kube-pires) and by "kubectl top".
+
+image:
+  repository: registry.k8s.io/metrics-server/metrics-server
+  # Overrides the image tag whose default is v{{ .Chart.AppVersion }}
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicas: 1
+
+defaultArgs:
+  - --cert-dir=/tmp
+  - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+  - --kubelet-use-node-status-port
+  - --metric-resolution=15s
+
+args:
+  # kind kubelets use self-signed serving certificates, which metrics-server can't verify.
+  # Only for local/lab clusters, never use this in production.
+  - --kubelet-insecure-tls
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 200Mi

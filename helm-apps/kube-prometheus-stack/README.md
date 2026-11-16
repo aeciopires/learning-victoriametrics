@@ -15,17 +15,17 @@
 # Requirements
 
 - Install all packages and binaries following the instructions on the [REQUIREMENTS.md](../../REQUIREMENTS.md) file.
-- Create the cluster following the instructions on the [README.md](../../README.md#create-the-cluster-and-deploy-applications) file.
+- Create the cluster following the instructions on the [README.md](../../README.md#create-cluster-and-deploy-applications) file.
 
 # Accessing Prometheus
 
-If needs add entry in ``/etc/hosts`` file:
+If needs add entry in ``/etc/hosts`` file (every hostname points to the address of the Envoy Gateway, see [gateway-api](../gateway-api/README.md)):
 
 > ATTENTION!!! You must be connected to the kind cluster
 
 ```bash
-kubectl wait --for=create ingress/monitor-mycompany-prometheus --timeout=900s -n monitoring
-export IP=$(kubectl get ing monitor-mycompany-prometheus -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+kubectl wait --for=jsonpath='{.status.parents[0].conditions[?(@.type=="Accepted")].status}'=True httproute/monitor-mycompany-prometheus --timeout=900s -n monitoring
+export IP=$(kubectl get gateway mycompany-gateway -n envoy-gateway-system -o jsonpath='{.status.addresses[0].value}')
 sudo grep -qxF "$IP  prometheus.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  prometheus.mycompany.com' >> /etc/hosts"
 ```
 
@@ -79,13 +79,13 @@ More informations about Throubleshooting in Prometheus-Operator are available [i
 
 # Accessing AlertManager
 
-If needs add entry in ``/etc/hosts`` file:
+If needs add entry in ``/etc/hosts`` file (every hostname points to the address of the Envoy Gateway, see [gateway-api](../gateway-api/README.md)):
 
 > ATTENTION!!! You must be connected to the kind cluster
 
 ```bash
-kubectl wait --for=create ingress/monitor-mycompany-alertmanager --timeout=900s -n monitoring
-export IP=$(kubectl get ing monitor-mycompany-alertmanager -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+kubectl wait --for=jsonpath='{.status.parents[0].conditions[?(@.type=="Accepted")].status}'=True httproute/monitor-mycompany-alertmanager --timeout=900s -n monitoring
+export IP=$(kubectl get gateway mycompany-gateway -n envoy-gateway-system -o jsonpath='{.status.addresses[0].value}')
 sudo grep -qxF "$IP  alertmanager.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  alertmanager.mycompany.com' >> /etc/hosts"
 ```
 
@@ -93,13 +93,13 @@ Open the browser and access the URL: https://alertmanager.mycompany.com/
 
 # Accessing Grafana
 
-If needs add entry in ``/etc/hosts`` file:
+If needs add entry in ``/etc/hosts`` file (every hostname points to the address of the Envoy Gateway, see [gateway-api](../gateway-api/README.md)):
 
 > ATTENTION!!! You must be connected to the kind cluster
 
 ```bash
-kubectl wait --for=create ingress/monitor-grafana --timeout=900s -n monitoring
-export IP=$(kubectl get ing monitor-grafana -n monitoring -o json | jq -r .status.loadBalancer.ingress[].ip)
+kubectl wait --for=jsonpath='{.status.parents[0].conditions[?(@.type=="Accepted")].status}'=True httproute/monitor-grafana --timeout=900s -n monitoring
+export IP=$(kubectl get gateway mycompany-gateway -n envoy-gateway-system -o jsonpath='{.status.addresses[0].value}')
 sudo grep -qxF "$IP  grafana.mycompany.com" /etc/hosts || sudo sh -c "echo '$IP  grafana.mycompany.com' >> /etc/hosts"
 ```
 

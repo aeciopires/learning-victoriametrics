@@ -17,7 +17,7 @@
 # Requirements
 
 - Install all packages and binaries following the instructions on the [REQUIREMENTS.md](../../REQUIREMENTS.md) file.
-- Create the cluster following the instructions on the [README.md](../../README.md#create-the-cluster-and-deploy-applications) file.
+- Create the cluster following the instructions on the [README.md](../../README.md#create-cluster-and-deploy-applications) file.
 
 # VictoriaTraces Cluster Mode
 
@@ -39,7 +39,7 @@ Every component can scale from a single node to arbitrary number of nodes and ca
 
 ## vmauth
 
-Just like VictoriaLogs cluster mode, this chart's own ``vmauth`` (see ``vmauth.enabled`` in [values.yaml](values.yaml)) is disabled. Access is instead routed through the single ``vmauth`` deployed by [victoriametrics-cluster-mode](../victoriametrics-cluster-mode/README.md), which fronts all VictoriaMetrics/VictoriaLogs/VictoriaTraces components behind one ingress hostname and authorizes requests per-user via HTTP Basic Auth. See the ``vmauth.config.users`` entries in [../victoriametrics-cluster-mode/values.yaml](../victoriametrics-cluster-mode/values.yaml).
+Just like VictoriaLogs cluster mode, this chart's own ``vmauth`` (see ``vmauth.enabled`` in [values.yaml](values.yaml)) is disabled. Access is instead routed through the single ``vmauth`` deployed by [victoriametrics-cluster-mode](../victoriametrics-cluster-mode/README.md), which fronts all VictoriaMetrics/VictoriaLogs/VictoriaTraces components behind one hostname (an HTTPRoute of the Envoy Gateway, see [gateway-api](../gateway-api/README.md)) and authorizes requests per-user via HTTP Basic Auth. See the ``vmauth.config.users`` entries in [../victoriametrics-cluster-mode/values.yaml](../victoriametrics-cluster-mode/values.yaml).
 
 - URL: https://victoriametrics-cluster.mycompany.com/
 - Write (insert) login: user-traces-insert / changeme
@@ -59,7 +59,7 @@ kubectl get all -n monitoring | grep 'victoria-traces\|vmauth'
 
 ``vtinsert`` accepts trace spans at the port **10481** on the following DNS name from within your cluster: **victoria-traces-victoria-traces-cluster-vtinsert.monitoring.svc.cluster.local**
 
-> **NOTE:** But outside cluster the service is accessed via the shared vmauth ingress described above.
+> **NOTE:** But outside cluster the service is accessed via the shared vmauth HTTPRoute described above.
 
 Internal URL to send OTLP/gRPC traces inside the cluster:
 
@@ -73,7 +73,7 @@ victoria-traces-victoria-traces-cluster-vtinsert.monitoring.svc.cluster.local:43
 
 ``vtselect`` accepts incoming queries at the port **10471** on the following DNS name from within your cluster: **victoria-traces-victoria-traces-cluster-vtselect.monitoring.svc.cluster.local**
 
-> **NOTE:** But outside cluster the service is accessed via the shared vmauth ingress described above.
+> **NOTE:** But outside cluster the service is accessed via the shared vmauth HTTPRoute described above.
 
 You need to configure a Jaeger data source in Grafana pointing to the Jaeger Query Service JSON API exposed by ``vtselect``. See [these docs](https://docs.victoriametrics.com/victoriatraces/#grafana) for details about visualizing traces in Grafana.
 

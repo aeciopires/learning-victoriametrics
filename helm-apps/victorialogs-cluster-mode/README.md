@@ -18,7 +18,7 @@
 # Requirements
 
 - Install all packages and binaries following the instructions on the [REQUIREMENTS.md](../../REQUIREMENTS.md) file.
-- Create the cluster following the instructions on the [README.md](../../README.md#create-the-cluster-and-deploy-applications) file.
+- Create the cluster following the instructions on the [README.md](../../README.md#create-cluster-and-deploy-applications) file.
 
 # VictoriaLogs Cluster Mode
 
@@ -54,7 +54,7 @@ This allows using various http proxies for authorization, routing and encryption
 
 VictoriaLogs provides a UI for query troubleshooting and exploration.
 
-This chart's own ``vmauth`` (see ``vmauth.enabled`` in [values.yaml](values.yaml)) is disabled. Access is instead routed through the single ``vmauth`` deployed by [victoriametrics-cluster-mode](../victoriametrics-cluster-mode/README.md), which fronts all VictoriaMetrics/VictoriaLogs/VictoriaTraces components behind one ingress hostname and authorizes requests per-user via HTTP Basic Auth. See the ``vmauth.config.users`` entries in [../victoriametrics-cluster-mode/values.yaml](../victoriametrics-cluster-mode/values.yaml).
+This chart's own ``vmauth`` (see ``vmauth.enabled`` in [values.yaml](values.yaml)) is disabled. Access is instead routed through the single ``vmauth`` deployed by [victoriametrics-cluster-mode](../victoriametrics-cluster-mode/README.md), which fronts all VictoriaMetrics/VictoriaLogs/VictoriaTraces components behind one hostname (an HTTPRoute of the Envoy Gateway, see [gateway-api](../gateway-api/README.md)) and authorizes requests per-user via HTTP Basic Auth. See the ``vmauth.config.users`` entries in [../victoriametrics-cluster-mode/values.yaml](../victoriametrics-cluster-mode/values.yaml).
 
 If needs add entry in ``/etc/hosts`` file, follow the instructions in the [victoriametrics-cluster-mode README](../victoriametrics-cluster-mode/README.md#vmui).
 

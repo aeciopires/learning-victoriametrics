@@ -4,3 +4,15 @@ global:
 
 crds:
   enabled: true
+
+# Controller configuration
+# Reference: https://cert-manager.io/docs/usage/gateway/
+config:
+  apiVersion: controller.config.cert-manager.io/v1alpha1
+  kind: ControllerConfiguration
+  # Enables the Gateway API support (gateway-shim): cert-manager creates a Certificate for each
+  # HTTPS listener of an annotated Gateway (helm-apps/gateway-api/manifests/02-gateway.yaml)
+  # and can solve ACME HTTP-01 challenges with HTTPRoutes.
+  # The Gateway API CRDs (installed by the envoy-gateway app) must exist before cert-manager starts.
+  gatewayAPI:
+    enabled: true

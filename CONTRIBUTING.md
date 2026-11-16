@@ -117,16 +117,19 @@ This repository holds no application source code. It is a GitOps configuration r
 └── helm-apps/                   # One directory per Helm-based application, see structure below
     ├── argocd/                  # Installed directly via `helm upgrade --install` in run.sh (no application.yaml,
     │   └── values.yaml          # since ArgoCD itself can't deploy ArgoCD)
-    ├── ingress-nginx/
-    ├── cert-manager/
+    ├── envoy-gateway/           # Envoy Gateway controller + Gateway API CRDs (OCI Helm chart)
+    ├── cert-manager/            # Gateway API support enabled (gateway-shim)
+    ├── gateway-api/             # Plain manifests (no chart): local CA, GatewayClass, Gateway,
+    │   └── manifests/           # HTTP->HTTPS redirect and the ArgoCD HTTPRoute
+    ├── metrics-server/          # Resource metrics API for the HPAs and `kubectl top`
     ├── kube-prometheus-stack/   # Prometheus, Grafana, Alertmanager
-    ├── victoriametrics-cluster-mode/  # vminsert / vmselect / vmstorage / vmauth (shared ingress)
+    ├── victoriametrics-cluster-mode/  # vminsert / vmselect / vmstorage / vmauth (shared HTTPRoute)
     ├── victorialogs-cluster-mode/     # vlinsert / vlselect / vlstorage
     ├── victoriatraces-cluster-mode/   # vtinsert / vtselect / vtstorage
     └── kube-pires/              # Sample app deployed into the `myapps` namespace
 ```
 
-Every `helm-apps/<app>/` directory (except `argocd/`, see above) follows the same three-file shape:
+Every `helm-apps/<app>/` directory (except `argocd/`, see above, and `gateway-api/`, which has a `manifests/` directory synced as plain manifests instead of a chart + `values.yaml`) follows the same three-file shape:
 
 - `application.yaml` — the ArgoCD `Application` manifest. Declares two `sources`: the upstream Helm chart (`repoURL`/`chart`/`targetRevision`) and this Git repo as a second source (`ref: values`) supplying `helm-apps/<app>/values.yaml`. `syncPolicy.automated` sets `prune: true` / `selfHeal: true`, so ArgoCD continuously reconciles the live cluster to match what's committed here.
 - `values.yaml` — Helm values passed to the upstream chart, normally generated from the chart's own defaults (`helm show values <chart> --version <version>`) and then trimmed/customized.
@@ -145,17 +148,20 @@ flowchart TD
     C --> D["helm install argocd<br/>(GitOps controller)"]
     D --> E["argocd login + repo add<br/>this repo + kube-pires repo"]
 
-    E --> F["kubectl apply application.yaml"]
-    F --> G["ingress-nginx"]
-    F --> H["cert-manager<br/>+ ClusterIssuer (Let's Encrypt HTTP-01)"]
-    F --> I["victoria-metrics<br/>(includes shared vmauth)"]
-    F --> J["victoria-logs"]
-    F --> K["victoria-traces"]
-    F --> L["kube-prometheus-stack<br/>(Prometheus/Grafana/Alertmanager)<br/>CRDs applied manually first"]
-    F --> M["kube-pires"]
+    E --> F["kubectl apply application.yaml<br/>(in this order, waiting each step)"]
+    F --> G["envoy-gateway<br/>(controller + Gateway API CRDs)"]
+    G --> H["cert-manager (Gateway API enabled)<br/>+ ClusterIssuer example (Let's Encrypt HTTP-01)"]
+    H --> GA["gateway-api<br/>(local CA, GatewayClass, Gateway,<br/>HTTP redirect, ArgoCD HTTPRoute)"]
+    GA --> MS["metrics-server"]
+    MS --> I["victoria-metrics<br/>(includes shared vmauth)"]
+    I --> J["victoria-logs"]
+    J --> K["victoria-traces"]
+    K --> L["kube-prometheus-stack<br/>(Prometheus/Grafana/Alertmanager)<br/>CRDs applied manually first"]
+    L --> M["kube-pires"]
 
-    G -.->|"provides Ingress class used by"| H
-    G -.->|"provides Ingress class used by"| I
+    GA -.->|"HTTPRoutes attach to the Gateway"| I
+    GA -.->|"HTTPRoutes attach to the Gateway"| L
+    GA -.->|"HTTPRoutes attach to the Gateway"| M
 
     subgraph Sync["ArgoCD continuous sync (per app)"]
         direction LR
@@ -165,29 +171,31 @@ flowchart TD
 
     G --- Sync
     H --- Sync
+    GA --- Sync
+    MS --- Sync
     I --- Sync
     J --- Sync
     K --- Sync
     L --- Sync
     M --- Sync
 
-    M --> N["kubectl wait for each Ingress,<br/>append LoadBalancer IP to /etc/hosts"]
+    M --> N["kubectl wait for each HTTPRoute (Accepted),<br/>append the Gateway address to /etc/hosts"]
 ```
 
 Because `values.yaml` is fetched from this Git repository (not the local working copy), any local edit only takes effect on the cluster once it is committed and pushed — `helm template` locally (or a direct `helm upgrade --install` against the same chart/values) is the fastest way to validate a change before pushing.
 
 ### Component communication workflow
 
-VictoriaMetrics, VictoriaLogs and VictoriaTraces are intentionally exposed through a **single shared `vmauth`** (deployed only by `victoriametrics-cluster-mode`) behind **one** ingress hostname, `victoriametrics-cluster.mycompany.com`, differentiated by HTTP Basic Auth user — not one ingress hostname per product. Every other app (ArgoCD, Grafana/Prometheus/Alertmanager, kube-pires) gets its own ingress hostname/service directly.
+VictoriaMetrics, VictoriaLogs and VictoriaTraces are intentionally exposed through a **single shared `vmauth`** (deployed only by `victoriametrics-cluster-mode`) behind **one** hostname, `victoriametrics-cluster.mycompany.com`, differentiated by HTTP Basic Auth user — not one hostname per product. Every other app (ArgoCD, Grafana/Prometheus/Alertmanager, kube-pires) gets its own hostname and `HTTPRoute`. All hostnames are served by a single Gateway API `Gateway` implemented by Envoy Gateway (see [helm-apps/gateway-api/README.md](helm-apps/gateway-api/README.md)).
 
 ```mermaid
 flowchart LR
-    Client["Client (browser / curl)"] --> Ingress["ingress-nginx<br/>*.mycompany.com (TLS via cert-manager)"]
+    Client["Client (browser / curl)"] --> Gateway["Envoy Gateway (Gateway API)<br/>*.mycompany.com<br/>(TLS with local CA via cert-manager)"]
 
-    Ingress -->|argocd.mycompany.com| ArgoCD["ArgoCD UI"]
-    Ingress -->|"grafana / prometheus /<br/>alertmanager.mycompany.com"| KPS["Grafana / Prometheus / Alertmanager<br/>(kube-prometheus-stack)"]
-    Ingress -->|kube-pires.mycompany.com| KubePires["kube-pires"]
-    Ingress -->|"victoriametrics-cluster.mycompany.com<br/>+ HTTP Basic Auth"| VMAuth["vmauth<br/>(deployed by victoria-metrics)"]
+    Gateway -->|argocd.mycompany.com| ArgoCD["ArgoCD UI"]
+    Gateway -->|"grafana / prometheus /<br/>alertmanager.mycompany.com"| KPS["Grafana / Prometheus / Alertmanager<br/>(kube-prometheus-stack)"]
+    Gateway -->|kube-pires.mycompany.com| KubePires["kube-pires"]
+    Gateway -->|"victoriametrics-cluster.mycompany.com<br/>+ HTTP Basic Auth"| VMAuth["vmauth<br/>(deployed by victoria-metrics)"]
 
     VMAuth -->|"user-insert"| VMInsert["vminsert :8480"]
     VMAuth -->|"user-select"| VMSelect["vmselect :8481"]
@@ -213,7 +221,7 @@ Notes:
 
 ## Testing and upgrading software versions
 
-Every third-party component pinned in this repo (`kind` node image, MetalLB, ArgoCD, cert-manager, ingress-nginx, kube-prometheus-stack/Prometheus-Operator, and the VictoriaMetrics/VictoriaLogs/VictoriaTraces Helm charts) should be bumped and re-tested end-to-end on a local `kind-multinodes` cluster before opening a PR. Follow this sequence:
+Every third-party component pinned in this repo (`kind` node image, MetalLB, ArgoCD, cert-manager, Envoy Gateway, metrics-server, kube-prometheus-stack/Prometheus-Operator, and the VictoriaMetrics/VictoriaLogs/VictoriaTraces Helm charts) should be bumped and re-tested end-to-end on a local `kind-multinodes` cluster before opening a PR. Follow this sequence:
 
 1. **Find the current pinned versions.**
    - `kind` node image: `KIND_CLUSTER_FILE` heredoc in [run.sh](run.sh) (`kindest/node:<tag>@sha256:<digest>`, repeated for each node).
@@ -228,12 +236,14 @@ Every third-party component pinned in this repo (`kind` node image, MetalLB, Arg
    helm repo add metallb https://metallb.github.io/metallb
    helm repo add argo https://argoproj.github.io/argo-helm
    helm repo add jetstack https://charts.jetstack.io
-   helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+   helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
    helm repo add victoriametrics https://victoriametrics.github.io/helm-charts/
    helm repo update
    helm search repo <repo>/<chart> --versions | head -5
    ```
+
+   Envoy Gateway is published as an OCI chart (no `helm repo add`), check the latest release at https://github.com/envoyproxy/gateway/releases and validate it with `helm show chart oci://docker.io/envoyproxy/gateway-helm --version <version>`. The chart bundles the Gateway API CRDs.
 
    For the Prometheus-Operator CRDs applied directly in `run.sh` (not via Helm), match the `appVersion` reported for `prometheus-community/kube-prometheus-stack` — the chart bundles that exact Prometheus-Operator release, and its CRDs must match.
 
@@ -256,7 +266,7 @@ Every third-party component pinned in this repo (`kind` node image, MetalLB, Arg
    helm list -A                                            # every release should be "deployed"
    ```
 
-   Then exercise each ingress URL documented in the relevant `helm-apps/<app>/README.md` (ArgoCD, Grafana, Prometheus, Alertmanager, vmui, kube-pires) to confirm logins and dashboards still work after the bump.
+   Then exercise each HTTPS URL (served by the Envoy Gateway) documented in the relevant `helm-apps/<app>/README.md` (ArgoCD, Grafana, Prometheus, Alertmanager, vmui, kube-pires) to confirm logins and dashboards still work after the bump.
 
 6. **Tear down** with `make down` once satisfied, so the branch isn't tied to local cluster state.
 
@@ -273,7 +283,7 @@ New components from the VictoriaMetrics Helm charts repository (https://github.c
    helm show values victoriametrics/<chart-name> --version <chart-version> > helm-apps/<new-app>/values.yaml
    ```
 
-3. If the chart ships its own `vmauth`, keep it disabled (`vmauth.enabled: false`) and instead add `user-<app>-insert` / `user-<app>-select` entries to `vmauth.config.users` in [helm-apps/victoriametrics-cluster-mode/values.yaml](helm-apps/victoriametrics-cluster-mode/values.yaml), pointing at the new component's internal `*.monitoring.svc.cluster.local` DNS name. This repo intentionally exposes every VictoriaMetrics/VictoriaLogs/VictoriaTraces read/write path through the single shared vmauth ingress (`victoriametrics-cluster.mycompany.com`), differentiated by HTTP Basic Auth user, instead of one ingress hostname per component.
+3. If the chart ships its own `vmauth`, keep it disabled (`vmauth.enabled: false`) and instead add `user-<app>-insert` / `user-<app>-select` entries to `vmauth.config.users` in [helm-apps/victoriametrics-cluster-mode/values.yaml](helm-apps/victoriametrics-cluster-mode/values.yaml), pointing at the new component's internal `*.monitoring.svc.cluster.local` DNS name. This repo intentionally exposes every VictoriaMetrics/VictoriaLogs/VictoriaTraces read/write path through the single shared vmauth HTTPRoute (`victoriametrics-cluster.mycompany.com`), differentiated by HTTP Basic Auth user, instead of one hostname per component.
 4. Set `nameOverride: ""` in the new `values.yaml` (rather than a chart-provided short name) so resource names follow the same `{release}-{chart}-{component}` pattern the vmauth `url_prefix` entries above depend on.
 5. Add `kubectl -n argocd apply -f helm-apps/<new-app>/application.yaml` to [run.sh](run.sh), alongside the other `victoria*` apps.
 6. Write `helm-apps/<new-app>/README.md` documenting the component architecture, the shared vmauth login, and internal write/read API DNS names/ports — follow the structure of [helm-apps/victoriatraces-cluster-mode/README.md](helm-apps/victoriatraces-cluster-mode/README.md).

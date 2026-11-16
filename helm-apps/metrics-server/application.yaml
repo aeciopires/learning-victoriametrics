@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ingress-nginx
+  name: metrics-server
   namespace: argocd
   annotations:
     # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
@@ -13,17 +13,17 @@ metadata:
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: ingress-nginx
+    namespace: kube-system
   # https://argo-cd.readthedocs.io/en/stable/user-guide/projects/
   project: default
   # https://argo-cd.readthedocs.io/en/stable/user-guide/multiple_sources/
   sources:
-  - repoURL: https://kubernetes.github.io/ingress-nginx
-    chart: ingress-nginx
-    targetRevision: 4.15.1
+  - repoURL: https://kubernetes-sigs.github.io/metrics-server/
+    chart: metrics-server
+    targetRevision: 3.14.0
     helm:
       valueFiles:
-      - $values/helm-apps/ingress-nginx/values.yaml
+      - $values/helm-apps/metrics-server/values.yaml
   - repoURL: https://github.com/aeciopires/learning-victoriametrics
     # Branch or tag name
     targetRevision: main
@@ -33,6 +33,3 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-options/
-    syncOptions:
-    - CreateNamespace=true
