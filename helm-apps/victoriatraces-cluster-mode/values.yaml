@@ -97,9 +97,6 @@ vtselect:
       tlsCertFile: ""
       tlsKeyFile: ""
       tlsMinVersion: ""
-      tlsAutocertHosts: ""
-      tlsAutocertEmail: ""
-      tlsAutocertCacheDir: ""
       mtls: false
       mtlsCAFile: ""
   # -- Extra command line arguments for vtselect component
@@ -408,9 +405,6 @@ vtinsert:
       tlsCertFile: ""
       tlsKeyFile: ""
       tlsMinVersion: ""
-      tlsAutocertHosts: ""
-      tlsAutocertEmail: ""
-      tlsAutocertCacheDir: ""
       mtls: false
       mtlsCAFile: ""
   # -- Extra command line arguments for vtinsert component
@@ -732,9 +726,6 @@ vtstorage:
       tlsCertFile: ""
       tlsKeyFile: ""
       tlsMinVersion: ""
-      tlsAutocertHosts: ""
-      tlsAutocertEmail: ""
-      tlsAutocertCacheDir: ""
       mtls: false
       mtlsCAFile: ""
   # -- Additional vtstorage container arguments. Extra command line arguments for vtstorage component
@@ -993,7 +984,7 @@ vmauth:
     repository: victoriametrics/vmauth
     # -- Image tag
     # override the default Chart.AppVersion, which is for vtraces components
-    tag: "v1.155.0"
+    tag: "v1.156.0"
     # -- Image pull policy
     pullPolicy: IfNotPresent
   # -- Override default container command. Use when the VictoriaMetrics binary is available at a custom path
@@ -1015,9 +1006,6 @@ vmauth:
       tlsCertFile: ""
       tlsKeyFile: ""
       tlsMinVersion: ""
-      tlsAutocertHosts: ""
-      tlsAutocertEmail: ""
-      tlsAutocertCacheDir: ""
       mtls: false
       mtlsCAFile: ""
   # -- Extra command line arguments for vmauth component

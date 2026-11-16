@@ -3,12 +3,43 @@
 <!-- TOC -->
 
 - [Changelog](#changelog)
+- [1.4.0](#140)
 - [1.3.0](#130)
 - [1.2.0](#120)
 - [1.1.0](#110)
 - [1.0.0](#100)
 
 <!-- TOC -->
+
+# 1.4.0
+
+Date: 2026/11/16
+
+> This homelab was tested in Ubuntu 22.04 64 bits
+
+- Bump software versions:
+  - ArgoCD: kept at 3.6.1
+    - helm chart: 10.12.1 -> 10.18.0
+  - VictoriaMetrics Cluster (all components): 1.155.0 -> 1.156.0
+    - helm chart: 0.54.0 -> 0.55.0
+  - VictoriaLogs Cluster (all components): 1.53.0 -> 1.54.0
+    - helm chart: 0.2.11 -> 0.2.12
+  - VictoriaTraces Cluster (all components): v0.12.1 -> v0.13.0
+    - helm chart: 0.2.12 -> 0.2.13
+    - vmauth image: v1.155.0 -> v1.156.0
+    - removed the `tlsAutocertHosts` / `tlsAutocertEmail` / `tlsAutocertCacheDir` values, dropped upstream in this chart version
+  - kube-prometheus-stack: 92.18.0 -> 93.3.0
+    - Grafana: 13.3.0 -> 13.3.1 (grafana helm chart 14.3.1 -> 14.4.1)
+    - Prometheus: v3.15.1 -> v3.16.0
+  - Prometheus-Operator: v0.94.2 -> v0.95.2
+  - Unchanged (already latest): kind 0.33.0 / node image v1.37.0, MetalLB 0.16.2, cert-manager v1.21.3, Ingress-Nginx 4.15.1
+- Migrated to **Helm 4**:
+  - helm: 3.22.1 -> 4.3.2
+  - `make requirements` (Makefile) and `run.sh` now check that `helm` is installed and is version 4
+  - helm-diff and helm-secrets install instructions rewritten for Helm 4: plugins are installed from signed release tarballs with provenance verification (`--keyring`), since Helm 4 dropped `--version` for plugins. helm-secrets is now split into the `secrets`, `secrets-getter` and `secrets-post-renderer` plugins
+- Bump CLI versions in softwares-ubuntu.md and softwares-macos.md:
+  - helm-secrets: v4.7.10 -> v4.7.11
+- Documentation: added a VictoriaStack section to README.md, comparing it with this homelab
 
 # 1.3.0
 

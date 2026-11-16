@@ -12,13 +12,13 @@ KIND_CLUSTER_FILE="/tmp/kind-cluster.yaml"
 METALLB_CHART_VERSION="0.16.2"
 METALLB_FILE="/tmp/metallb-ingress-address.yaml"
 CERT_MANAGER_CLUSTER_ISSUE_FILE="/tmp/cert-cluster-issue.yaml"
-ARGOCD_CHART_VERSION="10.12.1"
+ARGOCD_CHART_VERSION="10.18.0"
 ARGOCD_USER="admin"
 ARGOCD_INITIAL_PASS="changeme"
 ARGOCD_DNS="argocd.${DOMAIN_NAME}"
 # Also used as the Prometheus Operator CRDs release tag applied below; must match the
 # prometheus-operator version bundled by the kube-prometheus-stack chart (see its appVersion).
-KUBE_PROMETHEUS_STACK_VERSION="v0.94.2"
+KUBE_PROMETHEUS_STACK_VERSION="v0.95.2"
 KUBE_PIRES_DNS="kube-pires.${DOMAIN_NAME}"
 ALERTMANAGER_DNS="alertmanager.${DOMAIN_NAME}"
 GRAFANA_DNS="grafana.${DOMAIN_NAME}"
@@ -27,6 +27,20 @@ VICTORIAMETRICS_CLUSTER_MODE_DNS="victoriametrics-cluster.${DOMAIN_NAME}"
 VICTORIALOGS_CLUSTER_MODE_DNS="victorialogs-cluster.${DOMAIN_NAME}"
 #------------------------
 
+
+
+#---------------------------------------
+# Checking Helm version
+#---------------------------------------
+
+# This repository requires Helm 4 (see softwares-ubuntu.md / softwares-macos.md)
+HELM_VERSION=$(helm version --template '{{.Version}}' 2>/dev/null)
+if [[ "$HELM_VERSION" != v4.* ]]; then
+  echo "[ERROR] Helm 4 is required, found: ${HELM_VERSION:-none}"
+  exit 1
+fi
+echo "[INFO] Using Helm $HELM_VERSION"
+#-----------------------------------------------
 
 
 #---------------------------------------

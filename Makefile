@@ -31,9 +31,11 @@ CLUSTER_NAME="kind-multinodes"
 
 
 requirements:
-REQUIRED_PACKAGES := docker wget curl kind jq argocd cmctl
+REQUIRED_PACKAGES := docker wget curl kind jq argocd cmctl helm
 $(foreach package,$(REQUIRED_PACKAGES),\
 	$(if $(shell command -v $(package) 2> /dev/null),$(info Found `$(package)`),$(error Please install `$(package)`)))
+HELM_VERSION := $(shell helm version --template '{{.Version}}' 2> /dev/null)
+$(if $(filter v4.%,$(HELM_VERSION)),$(info Found `helm` $(HELM_VERSION)),$(error Helm 4 is required, found `$(HELM_VERSION)`))
 
 up:
 	make requirements

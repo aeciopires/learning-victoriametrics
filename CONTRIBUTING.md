@@ -222,7 +222,7 @@ Every third-party component pinned in this repo (`kind` node image, MetalLB, Arg
    - Any explicit `image.tag` overrides inside `helm-apps/<app>/values.yaml` (e.g. `global.image.vm.tag` in [victoriametrics-cluster-mode/values.yaml](helm-apps/victoriametrics-cluster-mode/values.yaml), `common.image.tag` in [victorialogs-cluster-mode/values.yaml](helm-apps/victorialogs-cluster-mode/values.yaml)).
    - The chart image tag in [helm-apps/argocd/values.yaml](helm-apps/argocd/values.yaml) (`global.image.tag`).
 
-2. **Look up the latest stable versions**, using the Helm repos already referenced by each `application.yaml`'s `repoURL`:
+2. **Look up the latest stable versions** with Helm 4 (required by this repo, see [softwares-ubuntu.md](softwares-ubuntu.md#helm)), using the Helm repos already referenced by each `application.yaml`'s `repoURL`:
 
    ```bash
    helm repo add metallb https://metallb.github.io/metallb

@@ -166,10 +166,12 @@ Run the following commands to install helm:
 
 > Before proceeding, make sure you have installed the command [asdf](#asdf).
 
+> This repository requires **Helm 4** (`make up` fails with Helm 3). See the Helm 4 overview: https://helm.sh/docs/overview/
+
 Reference: https://helm.sh/docs/
 
 ```bash
-VERSION="3.22.1"
+VERSION="4.3.2"
 
 asdf plugin list all | grep helm
 asdf plugin add helm https://github.com/Antiarchitect/asdf-helm.git
@@ -188,8 +190,20 @@ Run the following commands to install the ``helm-diff`` plugin.
 
 Reference: https://github.com/databus23/helm-diff
 
+Helm 4 verifies plugin provenance by default and doesn't support ``--version`` for plugins anymore, so install from the signed release tarball, verifying it with the maintainer's public key:
+
 ```bash
-helm plugin install https://github.com/databus23/helm-diff --version v3.15.15
+VERSION="3.15.15"
+OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/macos/')
+ARCH=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
+
+# Public key used to verify the plugin signature (.prov file)
+curl -sL https://github.com/databus23.gpg | gpg --dearmor > /tmp/helm-diff.gpg
+
+helm plugin install "https://github.com/databus23/helm-diff/releases/download/v${VERSION}/diff-${VERSION}-${OS_NAME}-${ARCH}.tgz" \
+  --keyring /tmp/helm-diff.gpg
+
+helm diff version
 ```
 
 # helm-secrets - Plugin
@@ -198,8 +212,20 @@ Run the following commands to install the ``helm-secrets`` plugin.
 
 Reference: https://github.com/jkroepke/helm-secrets
 
+In Helm 4, ``helm-secrets`` is split into three plugins (``secrets``, ``secrets-getter`` and ``secrets-post-renderer``). Install all of them from the signed release tarballs:
+
 ```bash
-helm plugin install https://github.com/jkroepke/helm-secrets --version v4.7.10
+VERSION="4.7.11"
+
+# Public key used to verify the plugin signatures (.prov files)
+curl -sL https://github.com/jkroepke.gpg | gpg --dearmor > /tmp/helm-secrets.gpg
+
+for PLUGIN in secrets secrets-getter secrets-post-renderer; do
+  helm plugin install "https://github.com/jkroepke/helm-secrets/releases/download/v${VERSION}/${PLUGIN}-${VERSION}.tgz" \
+    --keyring /tmp/helm-secrets.gpg
+done
+
+helm plugin list
 ```
 
 # kubectl

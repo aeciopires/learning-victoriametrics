@@ -4,6 +4,7 @@
 - [Use Case](#use-case)
 - [Contributing](#contributing)
 - [VictoriaMetrics documentation](#victoriametrics-documentation)
+- [VictoriaStack](#victoriastack)
 - [Requirements](#requirements)
 - [Create cluster and deploy applications](#create-cluster-and-deploy-applications)
   - [VictoriaMetrics Cluster Mode](#victoriametrics-cluster-mode)
@@ -53,6 +54,35 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) file.
 # VictoriaMetrics documentation
 
 See [LEARNING_VICTORIAMETRICS.md](LEARNING_VICTORIAMETRICS.md) file.
+
+# VictoriaStack
+
+[VictoriaStack](https://victoriametrics.com/products/victoriastack/) is the open source observability stack from VictoriaMetrics for **metrics, logs and traces**. It is not a single binary. It is a reference architecture that combines the VictoriaMetrics products, so you keep control over telemetry cost, retention and scaling on your own infrastructure.
+
+Main building blocks:
+
+| Layer | Components | Role |
+|---|---|---|
+| Storage | [VictoriaMetrics](https://docs.victoriametrics.com/victoriametrics/), [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/), [VictoriaTraces](https://docs.victoriametrics.com/victoriatraces/) | One database per signal, each one single-node or cluster (`insert` / `select` / `storage`) with its own retention |
+| Access | [vmauth](https://docs.victoriametrics.com/victoriametrics/vmauth/) | Authentication, routing, load balancing and multitenancy. The reference design uses one vmauth for writes (collectors) and another for reads (dashboards, alerting, AI clients) |
+| Collection | [vmagent](https://docs.victoriametrics.com/victoriametrics/vmagent/), OpenTelemetry, Fluent Bit, Vector, Prometheus remote write | Ingestion, with stream aggregation and on-disk buffering during outages |
+| Alerting | [vmalert](https://docs.victoriametrics.com/victoriametrics/vmalert/) + Alertmanager | Alerting and recording rules (Prometheus-compatible) |
+| Visualization / AI | vmui, Grafana, Perses, MCP servers | Dashboards, cross-signal correlation and AI-assisted investigation |
+| Kubernetes | [VictoriaMetrics Operator](https://docs.victoriametrics.com/operator/) and [Helm charts](https://github.com/VictoriaMetrics/helm-charts) | Manage databases, agents, vmauth and vmalert as Kubernetes resources |
+
+How this homelab maps to VictoriaStack:
+
+- **Already covered:** VictoriaMetrics, VictoriaLogs and VictoriaTraces in cluster mode, a vmauth that routes users to each product ([helm-apps/victoriametrics-cluster-mode/values.yaml](helm-apps/victoriametrics-cluster-mode/values.yaml)), Grafana with VictoriaMetrics and VictoriaLogs data sources, and Alertmanager.
+- **Different on purpose:** collection and alerting use Prometheus from [kube-prometheus-stack](helm-apps/kube-prometheus-stack/README.md), which writes metrics to vminsert with `remoteWrite`. VictoriaStack uses vmagent and vmalert for this. There is a single shared vmauth for both reads and writes, not two. Everything is installed with Helm charts managed by ArgoCD, not with the operator.
+- **Next steps to get closer to VictoriaStack:** replace Prometheus with vmagent and vmalert, split vmauth into write and read endpoints, send logs and traces through an OpenTelemetry Collector or Fluent Bit, or try the [VictoriaMetrics Operator](https://docs.victoriametrics.com/operator/).
+
+References:
+
+- Product page: https://victoriametrics.com/products/victoriastack/
+- Documentation: https://docs.victoriametrics.com/victoriastack/
+- Quick start: https://docs.victoriametrics.com/victoriastack/quick-start/
+- Deployment guide: https://docs.victoriametrics.com/victoriastack/deployment/
+- Source code: https://github.com/VictoriaMetrics/VictoriaStack
 
 # Requirements
 

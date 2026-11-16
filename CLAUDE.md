@@ -14,7 +14,7 @@ make down      # delete the kind cluster (kind delete clusters kind-multinodes)
 make recreate  # down then up
 ```
 
-- `make requirements` checks that `docker`, `wget`, `curl`, `kind`, `jq`, `argocd`, `cmctl` are installed (fails via `$(error ...)` if any is missing). Full install instructions per OS are in [softwares-ubuntu.md](softwares-ubuntu.md) and [softwares-macos.md](softwares-macos.md) (see [REQUIREMENTS.md](REQUIREMENTS.md)).
+- `make requirements` checks that `docker`, `wget`, `curl`, `kind`, `jq`, `argocd`, `cmctl`, `helm` are installed (fails via `$(error ...)` if any is missing) and that `helm` is **Helm 4** (`run.sh` repeats the Helm 4 check). Helm 4 plugins (helm-diff, helm-secrets) are installed from signed release tarballs, not with `--version`. Full install instructions per OS are in [softwares-ubuntu.md](softwares-ubuntu.md) and [softwares-macos.md](softwares-macos.md) (see [REQUIREMENTS.md](REQUIREMENTS.md)).
 - There is no build/lint/test tooling (no compiler, package manager, or test suite) — validation is done by actually running `make up` against a local kind cluster and checking resources with `kubectl`/`argocd`.
 - `run.sh` is idempotent-ish: it checks for existing kind clusters, existing Helm releases, and existing generated files under `/tmp` before acting, so it's normally safe to re-run.
 
