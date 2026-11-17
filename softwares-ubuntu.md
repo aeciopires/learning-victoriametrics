@@ -3,15 +3,10 @@
 - [Ubuntu](#ubuntu)
   - [Essential](#essential)
   - [Optionals](#optionals)
-- [asdf](#asdf)
-- [argocd-cli](#argocd-cli)
 - [docker](#docker)
-- [Go](#go)
-- [cmctl](#cmctl)
-- [Helm](#helm)
-- [helm-diff - Plugin](#helm-diff---plugin)
-- [helm-secrets - Plugin](#helm-secrets---plugin)
-- [kubectl](#kubectl)
+- [mise](#mise)
+  - [Tools installed by mise](#tools-installed-by-mise)
+  - [Helm plugins](#helm-plugins)
 - [kind](#kind)
   - [inotify limits](#inotify-limits)
 
@@ -24,7 +19,7 @@
 Run the following commands on Ubuntu 24.04/22.02:
 
 ```bash
-sudo apt install -y vim telnet netcat-openbsd git elinks curl wget net-tools python3 python3-pip python3-venv default-jdk jq make
+sudo apt install -y vim telnet netcat-openbsd git elinks curl wget net-tools python3 python3-pip python3-venv default-jdk make gnupg
 ```
 
 For Python "3.10.*" run the following command to create the symbolic link:
@@ -60,52 +55,9 @@ Install the following software:
     - https://dev.to/thegeoffstevens/50-vs-code-themes-for-2020-45cc
     - https://vscodethemes.com/
 
-# asdf
-
-Run the following commands:
-
-> Attention!!! To update ``asdf``, ONLY use the following command:
-
-```bash
-asdf update
-```
-
-> If you try to reinstall or update by changing the version in the following commands, you will need to reinstall all plugins/commands installed before, so it is very important to back up the ``$HOME/.asdf`` directory.
-
-```bash
-ASDF_VERSION="v0.15.0"
-git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch $ASDF_VERSION
-
-# Adding $HOME/.bashrc
-echo ". \"\$HOME/.asdf/asdf.sh\"" >> ~/.bashrc
-echo ". \"\$HOME/.asdf/completions/asdf.bash\"" >> ~/.bashrc
-source ~/.bashrc
-```
-
-Reference: https://asdf-vm.com/guide/introduction.html
-
-# argocd-cli
-
-Install ``argocd-cli`` using ``asdf``:
-
-> Before proceeding, make sure you have installed the command [asdf](#asdf).
-
-```bash
-VERSION=3.6.1
-asdf plugin-add argocd https://github.com/beardix/asdf-argocd.git
-asdf list all argocd
-asdf install argocd $VERSION
-asdf global argocd $VERSION
-```
-
-References:
-- https://argo-cd.readthedocs.io/en/stable/
-- https://github.com/beardix/asdf-argocd
-- http://blog.aeciopires.com/usando-o-argo-cd-para-implementar-a-abordagem-gitops-nos-clusters-kubernetes/
-
 # docker
 
-Install Docker CE (Community Edition) following the instructions on the page: <https://docs.docker.com/engine/install/ubuntu/>.
+Docker and Docker Compose are installed outside of mise. Install Docker CE (Community Edition) following the instructions on the page: <https://docs.docker.com/engine/install/ubuntu/>. The convenience script also installs the ``docker compose`` plugin.
 
 ```bash
 sudo apt update
@@ -114,228 +66,95 @@ curl -fsSL https://get.docker.com -o get-docker.sh;
 sudo sh get-docker.sh;
 sudo usermod -aG docker $USER;
 sudo setfacl -m user:$USER:rw /var/run/docker.sock
+
+docker version
+docker compose version
 ```
 
 Reference: <https://docs.docker.com/engine/install/linux-postinstall/#configure-docker-to-start-on-boot>
 
-# Go
+# mise
 
-Run the following commands to install Go.
+[mise](https://mise.jdx.dev) installs and pins the versions of every CLI used by this repository. The versions are declared in the [mise.toml](mise.toml) file at the root of the repository, and ``make`` runs every command through ``mise exec``, so the versions installed in your ``PATH`` don't matter.
 
-Reference: https://golang.org/doc/
+Install mise and activate it in your shell:
 
 ```bash
-VERSION=1.26.5
+curl https://mise.run | sh
 
-mkdir -p $HOME/go/bin
-cd /tmp
+echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
+source ~/.bashrc
 
-curl -L https://go.dev/dl/go$VERSION.linux-amd64.tar.gz -o go.tar.gz
-sudo rm -rf /usr/local/go 
-sudo tar -C /usr/local -xzf go.tar.gz
-rm /tmp/go.tar.gz
-
-export GOPATH=$HOME/go
-export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
-
-go version
-
-echo "GOPATH=$HOME/go" >> ~/.bashrc
-echo "PATH=\$PATH:/usr/local/go/bin:\$GOPATH/bin" >> ~/.bashrc
+mise --version
 ```
 
-# cmctl
+> If you use zsh, run ``echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc`` instead.
 
-``cmctl`` is a CLI tool that can help you to manage cert-manager resources inside your cluster.
-
-Run the following commands to install cmctl:
-
-> Before proceeding, make sure you have installed the command [go](#go).
+To update mise later, run:
 
 ```bash
-OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -sSL -o /usr/local/bin/cmctl "https://github.com/cert-manager/cmctl/releases/download/v2.6.2/cmctl_${OS}_${ARCH}"
-sudo chmod +x /usr/local/bin/cmctl
-```
-
-> Note: as of cert-manager v1.19+, ``cmctl`` is released from its own repository ([cert-manager/cmctl](https://github.com/cert-manager/cmctl)) as a plain binary asset (no longer a ``.tar.gz`` under cert-manager/cert-manager).
-
-Reference: https://cert-manager.io/docs/reference/cmctl/
-
-# Helm
-
-Run the following commands to install helm:
-
-> Before proceeding, make sure you have installed the command [asdf](#asdf).
-
-> This repository requires **Helm 4** (`make up` fails with Helm 3). See the Helm 4 overview: https://helm.sh/docs/overview/
-
-Reference: https://helm.sh/docs/
-
-```bash
-VERSION="4.3.2"
-
-asdf plugin list all | grep helm
-asdf plugin add helm https://github.com/Antiarchitect/asdf-helm.git
-asdf latest helm
-
-asdf install helm $VERSION
-asdf list helm
-
-asdf global helm $VERSION
-asdf list helm
-```
-
-# helm-diff - Plugin
-
-Run the following commands to install the ``helm-diff`` plugin.
-
-Reference: https://github.com/databus23/helm-diff
-
-Helm 4 verifies plugin provenance by default and doesn't support ``--version`` for plugins anymore, so install from the signed release tarball, verifying it with the maintainer's public key:
-
-```bash
-VERSION="3.15.15"
-OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/macos/')
-ARCH=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
-
-# Public key used to verify the plugin signature (.prov file)
-curl -sL https://github.com/databus23.gpg | gpg --dearmor > /tmp/helm-diff.gpg
-
-helm plugin install "https://github.com/databus23/helm-diff/releases/download/v${VERSION}/diff-${VERSION}-${OS_NAME}-${ARCH}.tgz" \
-  --keyring /tmp/helm-diff.gpg
-
-helm diff version
-```
-
-# helm-secrets - Plugin
-
-Run the following commands to install the ``helm-secrets`` plugin.
-
-Reference: https://github.com/jkroepke/helm-secrets
-
-In Helm 4, ``helm-secrets`` is split into three plugins (``secrets``, ``secrets-getter`` and ``secrets-post-renderer``). Install all of them from the signed release tarballs:
-
-```bash
-VERSION="4.7.11"
-
-# Public key used to verify the plugin signatures (.prov files)
-curl -sL https://github.com/jkroepke.gpg | gpg --dearmor > /tmp/helm-secrets.gpg
-
-for PLUGIN in secrets secrets-getter secrets-post-renderer; do
-  helm plugin install "https://github.com/jkroepke/helm-secrets/releases/download/v${VERSION}/${PLUGIN}-${VERSION}.tgz" \
-    --keyring /tmp/helm-secrets.gpg
-done
-
-helm plugin list
-```
-
-# kubectl
-
-Run the following commands.
-
-Reference: https://kubernetes.io/docs/reference/kubectl/overview/
-
-```bash
-VERSION_OPTION_1="1.37.2"
-
-asdf plugin list all | grep kubectl
-asdf plugin add kubectl https://github.com/asdf-community/asdf-kubectl.git
-asdf latest kubectl
-
-asdf install kubectl $VERSION_OPTION_1
-asdf list kubectl
-
-asdf global kubectl $VERSION_OPTION_1
-asdf list kubectl
-
-sudo ln -s $HOME/.asdf/shims/kubectl /usr/local/bin/kubectl
-```
-
-# kind
-
-Kind (Kubernetes in Docker) is another alternative for running Kubernetes in a local environment for testing and learning, but it is not recommended for production use.
-
-To install kind, run the following commands.
-
-> Before proceeding, make sure you have installed the command [asdf](#asdf).
-
-```bash
-VERSION="0.33.0"
-asdf plugin list all | grep kind
-asdf plugin add kind https://github.com/johnlayton/asdf-kind.git
-asdf latest kind
-asdf install kind $VERSION
-asdf list kind
-
-asdf global kind $VERSION
-```
-
-To create a multi-node cluster with Kind, create a YAML file to define the number and type of nodes in the cluster that you want.
-
-In the following example, you will create the file ``$HOME/kind-3nodes.yaml`` to specify a cluster with 1 master node (which will run the Kubernetes control plane) and 2 workers (which will run the Kubernetes data plane).
-
-```bash
-cat << EOF > $HOME/kind-3nodes.yaml
-# References:
-# Kind release image: https://github.com/kubernetes-sigs/kind/releases
-# Configuration: https://kind.sigs.k8s.io/docs/user/configuration/
-# Metal LB in Kind: https://kind.sigs.k8s.io/docs/user/loadbalancer
-# Ingress in Kind: https://kind.sigs.k8s.io/docs/user/ingress
-
-# Config compatible with kind v0.33.0
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  podSubnet: "10.244.0.0/16"
-  serviceSubnet: "10.96.0.0/12"
-nodes:
-  - role: control-plane
-    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
-    kubeadmConfigPatches:
-    - |
-      kind: InitConfiguration
-      nodeRegistration:
-        kubeletExtraArgs:
-          node-labels: "nodeapp=loadbalancer"
-    extraPortMappings:
-    - containerPort: 80
-      hostPort: 80
-      listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
-      protocol: TCP
-    - containerPort: 443
-      hostPort: 443
-      listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
-      protocol: TCP
-  - role: worker
-    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
-  - role: worker
-    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
-EOF
-```
-
-Create a cluster named ``kind-multinodes`` using the specifications defined in the ``$HOME/kind-3nodes.yaml`` file.
-
-```bash
-kind create cluster --name kind-multinodes --config $HOME/kind-3nodes.yaml
-```
-
-To view your clusters using kind, run the following command.
-
-```bash
-kind get clusters
-```
-
-To destroy the cluster, run the following command which will select and remove all local clusters created on Kind.
-
-```bash
-kind delete clusters $(kind get clusters)
+mise self-update
 ```
 
 References:
-- https://github.com/badtuxx/DescomplicandoKubernetes/blob/master/day-1/DescomplicandoKubernetes-Day1.md#kind
+- https://mise.jdx.dev/getting-started.html
+- https://mise.jdx.dev/installing-mise.html
+
+## Tools installed by mise
+
+Inside the directory of this repository, install the tools declared in [mise.toml](mise.toml) (``make up`` also does it):
+
+```bash
+cd learning-victoriametrics
+mise install
+mise ls --current
+```
+
+| Tool | Description | Reference |
+|---|---|---|
+| ``argocd`` | ArgoCD CLI | https://argo-cd.readthedocs.io/en/stable/ |
+| ``cmctl`` | cert-manager CLI, used by ``run.sh`` to wait for the cert-manager API | https://cert-manager.io/docs/reference/cmctl/ |
+| ``helm`` | **Helm 4**. Helm 3 is not supported: ``make`` and ``run.sh`` fail if ``helm`` isn't version 4 | https://helm.sh/docs/overview/ |
+| ``jq`` | JSON processor | https://jqlang.org/ |
+| ``kind`` | Kubernetes in Docker, creates the local cluster | https://kind.sigs.k8s.io/ |
+| ``kubectl`` | Kubernetes CLI | https://kubernetes.io/docs/reference/kubectl/ |
+
+Every tool uses the [aqua backend](https://mise.jdx.dev/dev-tools/backends/aqua.html) of mise (official release binaries, verified with checksums). To bump a version, change it in [mise.toml](mise.toml) and run ``mise install``.
+
+When mise is activated in your shell, these versions are used automatically inside the directory of the repository. Outside of it, run ``mise exec -- <command>`` from the repository directory, or use ``make``.
+
+## Helm plugins
+
+Optional. The ``helm-diff`` and ``helm-secrets`` plugins are installed by a [mise task](https://mise.jdx.dev/tasks/) declared in [mise.toml](mise.toml):
+
+```bash
+make helm-plugins
+# or
+mise run helm-plugins
+```
+
+Helm 4 verifies plugin provenance by default and doesn't support ``--version`` for plugins anymore, so the task installs the signed release tarballs, verifying them with the GPG public keys of the maintainers (https://github.com/databus23.gpg and https://github.com/jkroepke.gpg). In Helm 4, ``helm-secrets`` is split into three plugins: ``secrets``, ``secrets-getter`` and ``secrets-post-renderer``. The task is idempotent: it only installs the plugins missing or in another version.
+
+References:
+- https://github.com/databus23/helm-diff
+- https://github.com/jkroepke/helm-secrets/blob/main/docs/Installation.md
+
+# kind
+
+Kind (Kubernetes in Docker) runs Kubernetes in a local environment for testing and learning, but it is not recommended for production use. It's installed by mise (see [Tools installed by mise](#tools-installed-by-mise)).
+
+The cluster of this lab (``kind-multinodes``, 1 control plane and 2 workers) is created by ``make up``, with the configuration written by [run.sh](run.sh) (``KIND_CLUSTER_FILE``).
+
+Useful commands:
+
+```bash
+kind get clusters
+kind get nodes --name kind-multinodes
+```
+
+References:
 - https://kind.sigs.k8s.io/docs/user/quick-start/
 - https://github.com/kubernetes-sigs/kind/releases
-- https://kubernetes.io/blog/2020/05/21/wsl-docker-kubernetes-on-the-windows-desktop/#kind-kubernetes-made-easy-in-a-container
 
 ## inotify limits
 

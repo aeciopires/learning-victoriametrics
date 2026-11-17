@@ -1,0 +1,57 @@
+# Tools used by this repository, installed and pinned with mise (https://mise.jdx.dev).
+#
+#   mise install          # installs every tool below (also run by "make up")
+#   mise run helm-plugins # optional: helm-diff and helm-secrets plugins
+#
+# Every tool uses the aqua backend (official release binaries, verified with checksums).
+# docker + docker compose (Linux) or colima + docker CLI + docker-compose (MacOS) are
+# installed outside of mise, see softwares-ubuntu.md / softwares-macos.md.
+#
+# When bumping a version here, update CHANGELOG.md too.
+
+[tools]
+"aqua:argoproj/argo-cd" = "3.6.1"        # argocd CLI
+"aqua:cert-manager/cmctl" = "2.6.2"      # cert-manager CLI
+"aqua:helm/helm" = "4.3.2"               # Helm 4 (Helm 3 is not supported)
+"aqua:jqlang/jq" = "1.8.2"
+"aqua:kubernetes-sigs/kind" = "0.33.0"
+"aqua:kubernetes/kubernetes/kubectl" = "1.37.2"
+
+[tasks.helm-plugins]
+description = "Install the helm-diff and helm-secrets plugins (Helm 4, signed tarballs verified with the maintainers' GPG keys)"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+
+HELM_DIFF_VERSION="3.15.15"
+HELM_SECRETS_VERSION="4.7.11"
+
+OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/macos/')
+ARCH=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
+KEYS_DIR=$(mktemp -d)
+trap 'rm -rf "$KEYS_DIR"' EXIT
+
+installed() { helm plugin list | awk 'NR>1 {print $1" "$2}' | grep -qx "$1 $2"; }
+
+if installed diff "$HELM_DIFF_VERSION"; then
+  echo "[INFO] helm-diff $HELM_DIFF_VERSION already installed"
+else
+  helm plugin uninstall diff >/dev/null 2>&1 || true
+  curl -fsSL https://github.com/databus23.gpg | gpg --dearmor > "$KEYS_DIR/helm-diff.gpg"
+  helm plugin install "https://github.com/databus23/helm-diff/releases/download/v${HELM_DIFF_VERSION}/diff-${HELM_DIFF_VERSION}-${OS_NAME}-${ARCH}.tgz" \
+    --keyring "$KEYS_DIR/helm-diff.gpg"
+fi
+
+curl -fsSL https://github.com/jkroepke.gpg | gpg --dearmor > "$KEYS_DIR/helm-secrets.gpg"
+for PLUGIN in secrets secrets-getter secrets-post-renderer; do
+  if installed "$PLUGIN" "$HELM_SECRETS_VERSION"; then
+    echo "[INFO] $PLUGIN $HELM_SECRETS_VERSION already installed"
+    continue
+  fi
+  helm plugin uninstall "$PLUGIN" >/dev/null 2>&1 || true
+  helm plugin install "https://github.com/jkroepke/helm-secrets/releases/download/v${HELM_SECRETS_VERSION}/${PLUGIN}-${HELM_SECRETS_VERSION}.tgz" \
+    --keyring "$KEYS_DIR/helm-secrets.gpg"
+done
+
+helm plugin list
+'''

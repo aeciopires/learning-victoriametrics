@@ -3,15 +3,12 @@
 - [MacOS](#macos)
   - [Homebrew](#homebrew)
   - [Essentials](#essentials)
-- [asdf](#asdf)
-- [argocd-cli](#argocd-cli)
-- [docker](#docker)
-- [Go](#go)
-- [cmctl](#cmctl)
-- [Helm](#helm)
-- [helm-diff - Plugin](#helm-diff---plugin)
-- [helm-secrets - Plugin](#helm-secrets---plugin)
-- [kubectl](#kubectl)
+- [Colima, docker and docker-compose](#colima-docker-and-docker-compose)
+  - [inotify limits](#inotify-limits)
+  - [Network](#network)
+- [mise](#mise)
+  - [Tools installed by mise](#tools-installed-by-mise)
+  - [Helm plugins](#helm-plugins)
 - [kind](#kind)
 
 <!-- TOC -->
@@ -39,7 +36,7 @@ Run the following commands:
 ```bash
 software --install rosetta --agree-to-license
 
-brew install vim telnet netcat git elinks curl wget net-tools python3 openjdk jq make coreutils visual-studio-code
+brew install vim telnet netcat git elinks curl wget net-tools python3 openjdk make coreutils gnupg bash visual-studio-code
 
 echo 'export PATH="/opt/homebrew/opt/curl/bin:\$PATH"' >> "/User/$USER/.bash_profile"
 
@@ -79,265 +76,140 @@ Install the following software:
     - https://dev.to/thegeoffstevens/50-vs-code-themes-for-2020-45cc
     - https://vscodethemes.com/
 
-# asdf
+# Colima, docker and docker-compose
 
-Run the following commands:
+[Colima](https://github.com/abiosoft/colima) runs the container runtime in a lightweight Linux VM, used instead of Docker Desktop. Colima, the ``docker`` CLI and ``docker-compose`` are installed with Homebrew, outside of mise.
 
-> Attention!!! To update ``asdf``, ONLY use the following command:
-
-```bash
-asdf update
-```
-
-> If you try to reinstall or update by changing the version in the following commands, you will need to reinstall all plugins/commands installed before, so it is very important to back up the ``$HOME/.asdf`` directory.
+> Before proceeding, make sure you have installed the command [Homebrew](#homebrew).
 
 ```bash
-ASDF_VERSION="v0.15.0"
-git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch $ASDF_VERSION
+brew install colima docker docker-compose
 
-# Adding $HOME/.bashrc
-echo ". \"\$HOME/.asdf/asdf.sh\"" >> ~/.bash_profile
-echo ". \"\$HOME/.asdf/completions/asdf.bash\"" >> ~/.bash_profile
-source ~/.bash_profile
+# Make "docker compose" (plugin syntax) find the docker-compose installed by Homebrew
+mkdir -p ~/.docker/cli-plugins
+ln -sfn "$(brew --prefix)/opt/docker-compose/bin/docker-compose" ~/.docker/cli-plugins/docker-compose
 ```
 
-Reference: https://asdf-vm.com/guide/introduction.html
-
-# argocd-cli
-
-Install ``argocd-cli`` using ``asdf``:
-
-> Before proceeding, make sure you have installed the command [asdf](#asdf).
+Start the Colima VM. The kind cluster of this lab (3 nodes, VictoriaMetrics, VictoriaLogs, VictoriaTraces, kube-prometheus-stack, ArgoCD, ...) used about 6 GB of memory in tests on Linux, so give the VM at least 4 CPUs and 12 GB of memory:
 
 ```bash
-VERSION=3.6.1
-asdf plugin-add argocd https://github.com/beardix/asdf-argocd.git
-asdf list all argocd
-asdf install argocd $VERSION
-asdf global argocd $VERSION
+colima start --cpu 4 --memory 12 --disk 60
+
+docker version
+docker compose version
 ```
+
+To start Colima automatically on login, run ``brew services start colima``.
 
 References:
-- https://argo-cd.readthedocs.io/en/stable/
-- https://github.com/beardix/asdf-argocd
-- http://blog.aeciopires.com/usando-o-argo-cd-para-implementar-a-abordagem-gitops-nos-clusters-kubernetes/
+- https://github.com/abiosoft/colima
+- https://github.com/abiosoft/colima/blob/main/docs/FAQ.md
+- https://kind.sigs.k8s.io/docs/user/known-issues/
 
-# docker
+## inotify limits
 
-Install Docker CE (Community Edition) following the instructions on the page: https://docs.docker.com/desktop/install/mac-install/.
+The kind nodes share the inotify limits of the kernel of the Colima VM. If they are too low, pods like Vector (VictoriaLogs) crash with ``Too many open files``. ``run.sh`` only adjusts the limits of a Linux host, so on MacOS raise them inside the VM (it lasts until the VM restarts):
 
-Run the following commands:
+```bash
+colima ssh -- sudo sysctl -w fs.inotify.max_user_watches=524288 fs.inotify.max_user_instances=512
+```
+
+To apply it on every start, run ``colima start --edit`` and add a provision script to the configuration:
+
+```yaml
+provision:
+  - mode: system
+    script: sysctl -w fs.inotify.max_user_watches=524288 fs.inotify.max_user_instances=512
+```
+
+Reference: https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
+
+## Network
+
+``run.sh`` adds the address of the Envoy Gateway (a MetalLB IP of the ``kind`` docker network) to ``/etc/hosts``. On MacOS, this network is inside the Colima VM, so the IP may not be reachable from the host. In this case, forward the HTTPS port of the Gateway to your machine and point the hostnames to ``127.0.0.1``:
+
+```bash
+SVC=$(kubectl -n envoy-gateway-system get svc -l gateway.envoyproxy.io/owning-gateway-name=mycompany-gateway -o jsonpath='{.items[0].metadata.name}')
+kubectl -n envoy-gateway-system port-forward "svc/$SVC" 8443:443
+```
+
+Then, in ``/etc/hosts``, replace the Gateway IP by ``127.0.0.1`` and access the URLs with the port ``8443`` (example: https://grafana.mycompany.com:8443).
+
+# mise
+
+[mise](https://mise.jdx.dev) installs and pins the versions of every CLI used by this repository. The versions are declared in the [mise.toml](mise.toml) file at the root of the repository, and ``make`` runs every command through ``mise exec``, so the versions installed in your ``PATH`` don't matter.
 
 > Before proceeding, make sure you have installed the command [Homebrew](#homebrew).
 
-```bash
-brew install --cask docker
-brew install docker-machine
-```
-
-Reference: https://stackoverflow.com/questions/44084846/cannot-connect-to-the-docker-daemon-on-macos
-
-# Go
-
-Run the following commands to install Go.
-
-> Before proceeding, make sure you have installed the command [Homebrew](#homebrew).
+Install mise and activate it in your shell (zsh is the default shell of MacOS):
 
 ```bash
-brew install go
+brew install mise
+
+echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
+source ~/.zshrc
+
+mise --version
 ```
 
-Reference: https://golang.org/doc/
+> If you use bash, run ``echo 'eval "$(mise activate bash)"' >> ~/.bash_profile`` instead.
 
-# cmctl
+To update mise later, run ``brew upgrade mise``.
 
-``cmctl`` is a CLI tool that can help you to manage cert-manager resources inside your cluster.
+References:
+- https://mise.jdx.dev/getting-started.html
+- https://mise.jdx.dev/installing-mise.html
 
-Run the following commands to install cmctl:
+## Tools installed by mise
 
-> Before proceeding, make sure you have installed the command [go](#go).
+Inside the directory of this repository, install the tools declared in [mise.toml](mise.toml) (``make up`` also does it):
 
 ```bash
-OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -sSL -o /usr/local/bin/cmctl "https://github.com/cert-manager/cmctl/releases/download/v2.6.2/cmctl_${OS}_${ARCH}"
-sudo chmod +x /usr/local/bin/cmctl
+cd learning-victoriametrics
+mise install
+mise ls --current
 ```
 
-> Nota: a partir do cert-manager v1.19+, o ``cmctl`` passou a ser publicado em um repositório próprio ([cert-manager/cmctl](https://github.com/cert-manager/cmctl)) como binário simples (sem mais ser um ``.tar.gz`` em cert-manager/cert-manager).
+| Tool | Description | Reference |
+|---|---|---|
+| ``argocd`` | ArgoCD CLI | https://argo-cd.readthedocs.io/en/stable/ |
+| ``cmctl`` | cert-manager CLI, used by ``run.sh`` to wait for the cert-manager API | https://cert-manager.io/docs/reference/cmctl/ |
+| ``helm`` | **Helm 4**. Helm 3 is not supported: ``make`` and ``run.sh`` fail if ``helm`` isn't version 4 | https://helm.sh/docs/overview/ |
+| ``jq`` | JSON processor | https://jqlang.org/ |
+| ``kind`` | Kubernetes in Docker, creates the local cluster | https://kind.sigs.k8s.io/ |
+| ``kubectl`` | Kubernetes CLI | https://kubernetes.io/docs/reference/kubectl/ |
 
-Reference: https://cert-manager.io/docs/reference/cmctl/
+Every tool uses the [aqua backend](https://mise.jdx.dev/dev-tools/backends/aqua.html) of mise (official release binaries, verified with checksums). To bump a version, change it in [mise.toml](mise.toml) and run ``mise install``.
 
-# Helm
+## Helm plugins
 
-Run the following commands to install helm:
-
-> Before proceeding, make sure you have installed the command [asdf](#asdf).
-
-> This repository requires **Helm 4** (`make up` fails with Helm 3). See the Helm 4 overview: https://helm.sh/docs/overview/
-
-Reference: https://helm.sh/docs/
+Optional. The ``helm-diff`` and ``helm-secrets`` plugins are installed by a [mise task](https://mise.jdx.dev/tasks/) declared in [mise.toml](mise.toml):
 
 ```bash
-VERSION="4.3.2"
-
-asdf plugin list all | grep helm
-asdf plugin add helm https://github.com/Antiarchitect/asdf-helm.git
-asdf latest helm
-
-asdf install helm $VERSION
-asdf list helm
-
-asdf global helm $VERSION
-asdf list helm
+make helm-plugins
+# or
+mise run helm-plugins
 ```
 
-# helm-diff - Plugin
+Helm 4 verifies plugin provenance by default and doesn't support ``--version`` for plugins anymore, so the task installs the signed release tarballs, verifying them with the GPG public keys of the maintainers. In Helm 4, ``helm-secrets`` is split into three plugins: ``secrets``, ``secrets-getter`` and ``secrets-post-renderer``.
 
-Run the following commands to install the ``helm-diff`` plugin.
-
-Reference: https://github.com/databus23/helm-diff
-
-Helm 4 verifies plugin provenance by default and doesn't support ``--version`` for plugins anymore, so install from the signed release tarball, verifying it with the maintainer's public key:
-
-```bash
-VERSION="3.15.15"
-OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/macos/')
-ARCH=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
-
-# Public key used to verify the plugin signature (.prov file)
-curl -sL https://github.com/databus23.gpg | gpg --dearmor > /tmp/helm-diff.gpg
-
-helm plugin install "https://github.com/databus23/helm-diff/releases/download/v${VERSION}/diff-${VERSION}-${OS_NAME}-${ARCH}.tgz" \
-  --keyring /tmp/helm-diff.gpg
-
-helm diff version
-```
-
-# helm-secrets - Plugin
-
-Run the following commands to install the ``helm-secrets`` plugin.
-
-Reference: https://github.com/jkroepke/helm-secrets
-
-In Helm 4, ``helm-secrets`` is split into three plugins (``secrets``, ``secrets-getter`` and ``secrets-post-renderer``). Install all of them from the signed release tarballs:
-
-```bash
-VERSION="4.7.11"
-
-# Public key used to verify the plugin signatures (.prov files)
-curl -sL https://github.com/jkroepke.gpg | gpg --dearmor > /tmp/helm-secrets.gpg
-
-for PLUGIN in secrets secrets-getter secrets-post-renderer; do
-  helm plugin install "https://github.com/jkroepke/helm-secrets/releases/download/v${VERSION}/${PLUGIN}-${VERSION}.tgz" \
-    --keyring /tmp/helm-secrets.gpg
-done
-
-helm plugin list
-```
-
-# kubectl
-
-Run the following commands.
-
-Reference: https://kubernetes.io/docs/reference/kubectl/overview/
-
-```bash
-VERSION_OPTION_1="1.37.2"
-
-asdf plugin list all | grep kubectl
-asdf plugin add kubectl https://github.com/asdf-community/asdf-kubectl.git
-asdf latest kubectl
-
-asdf install kubectl $VERSION_OPTION_1
-asdf list kubectl
-
-asdf global kubectl $VERSION_OPTION_1
-asdf list kubectl
-
-sudo ln -s $HOME/.asdf/shims/kubectl /usr/local/bin/kubectl
-```
+References:
+- https://github.com/databus23/helm-diff
+- https://github.com/jkroepke/helm-secrets/blob/main/docs/Installation.md
 
 # kind
 
-Kind (Kubernetes in Docker) is another alternative for running Kubernetes in a local environment for testing and learning, but it is not recommended for production use.
+Kind (Kubernetes in Docker) runs Kubernetes in a local environment for testing and learning, but it is not recommended for production use. It's installed by mise (see [Tools installed by mise](#tools-installed-by-mise)) and uses the docker of Colima.
 
-To install kind, run the following commands.
+The cluster of this lab (``kind-multinodes``, 1 control plane and 2 workers) is created by ``make up``, with the configuration written by [run.sh](run.sh) (``KIND_CLUSTER_FILE``).
 
-> Before proceeding, make sure you have installed the command [asdf](#asdf).
-
-```bash
-VERSION="0.33.0"
-asdf plugin list all | grep kind
-asdf plugin add kind https://github.com/johnlayton/asdf-kind.git
-asdf latest kind
-asdf install kind $VERSION
-asdf list kind
-
-asdf global kind $VERSION
-```
-
-To create a multi-node cluster with Kind, create a YAML file to define the number and type of nodes in the cluster that you want.
-
-In the following example, you will create the file ``$HOME/kind-3nodes.yaml`` to specify a cluster with 1 master node (which will run the Kubernetes control plane) and 2 workers (which will run the Kubernetes data plane).
-
-```bash
-cat << EOF > $HOME/kind-3nodes.yaml
-# References:
-# Kind release image: https://github.com/kubernetes-sigs/kind/releases
-# Configuration: https://kind.sigs.k8s.io/docs/user/configuration/
-# Metal LB in Kind: https://kind.sigs.k8s.io/docs/user/loadbalancer
-# Ingress in Kind: https://kind.sigs.k8s.io/docs/user/ingress
-
-# Config compatible with kind v0.33.0
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  podSubnet: "10.244.0.0/16"
-  serviceSubnet: "10.96.0.0/12"
-nodes:
-  - role: control-plane
-    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
-    kubeadmConfigPatches:
-    - |
-      kind: InitConfiguration
-      nodeRegistration:
-        kubeletExtraArgs:
-          node-labels: "nodeapp=loadbalancer"
-    extraPortMappings:
-    - containerPort: 80
-      hostPort: 80
-      listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
-      protocol: TCP
-    - containerPort: 443
-      hostPort: 443
-      listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
-      protocol: TCP
-  - role: worker
-    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
-  - role: worker
-    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
-EOF
-```
-
-Create a cluster named ``kind-multinodes`` using the specifications defined in the ``$HOME/kind-3nodes.yaml`` file.
-
-```bash
-kind create cluster --name kind-multinodes --config $HOME/kind-3nodes.yaml
-```
-
-To view your clusters using kind, run the following command.
+Useful commands:
 
 ```bash
 kind get clusters
-```
-
-To destroy the cluster, run the following command which will select and remove all local clusters created on Kind.
-
-```bash
-kind delete clusters $(kind get clusters)
+kind get nodes --name kind-multinodes
 ```
 
 References:
-- https://github.com/badtuxx/DescomplicandoKubernetes/blob/master/day-1/DescomplicandoKubernetes-Day1.md#kind
 - https://kind.sigs.k8s.io/docs/user/quick-start/
 - https://github.com/kubernetes-sigs/kind/releases
-- https://kubernetes.io/blog/2020/05/21/wsl-docker-kubernetes-on-the-windows-desktop/#kind-kubernetes-made-easy-in-a-container

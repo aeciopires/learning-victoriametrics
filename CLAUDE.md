@@ -9,12 +9,14 @@ A homelab/learning environment for VictoriaMetrics, VictoriaLogs and VictoriaTra
 ## Commands
 
 ```bash
-make up        # check requirements, then run ./run.sh: create kind cluster + install everything
-make down      # delete the kind cluster (kind delete clusters kind-multinodes)
-make recreate  # down then up
+make up           # check requirements + mise install, then "mise exec -- ./run.sh": create kind cluster + install everything
+make down          # delete the kind cluster and the files run.sh generated in /tmp
+make recreate      # down then up
+make tools         # mise install
+make helm-plugins  # optional: mise run helm-plugins (helm-diff, helm-secrets)
 ```
 
-- `make requirements` checks that `docker`, `wget`, `curl`, `kind`, `jq`, `argocd`, `cmctl`, `helm` are installed (fails via `$(error ...)` if any is missing) and that `helm` is **Helm 4** (`run.sh` repeats the Helm 4 check). Helm 4 plugins (helm-diff, helm-secrets) are installed from signed release tarballs, not with `--version`. Full install instructions per OS are in [softwares-ubuntu.md](softwares-ubuntu.md) and [softwares-macos.md](softwares-macos.md) (see [REQUIREMENTS.md](REQUIREMENTS.md)).
+- Tooling is managed by **mise** (never asdf): `kind`, `kubectl`, `helm`, `argocd`, `cmctl`, `jq` are pinned in [mise.toml](mise.toml) with explicit `aqua:` backends, and the Makefile runs `run.sh`/`kind` through `mise exec --`, so whatever is in the user's `PATH` doesn't matter. Only Docker (+ compose plugin) on Ubuntu or Colima + docker CLI + docker-compose on MacOS, mise itself, `make`, `curl`, `gpg` and `sudo` are installed outside of mise. `make requirements` checks those, checks that docker is running, runs `mise install` and verifies `helm` is **Helm 4** (`run.sh` repeats the check; Helm 3 is not supported). The `helm-plugins` mise task installs helm-diff/helm-secrets from signed release tarballs (Helm 4 has no `--version` for plugins). Install instructions per OS are in [softwares-ubuntu.md](softwares-ubuntu.md) and [softwares-macos.md](softwares-macos.md) (see [REQUIREMENTS.md](REQUIREMENTS.md)).
 - There is no build/lint/test tooling (no compiler, package manager, or test suite) — validation is done by actually running `make up` against a local kind cluster and checking resources with `kubectl`/`argocd`.
 - `run.sh` is idempotent-ish: it checks for existing kind clusters, existing Helm releases, and existing generated files under `/tmp` before acting, so it's normally safe to re-run.
 
@@ -39,7 +41,7 @@ Architecture diagrams: `images/vm-vl-cluster-arch.png`, `images/tools-used.png`,
 
 ## Making changes
 
-- Software/chart version bumps live in several places that must stay in sync: the `targetRevision` (chart version) in each `application.yaml`, explicit `image.tag` overrides inside the corresponding `helm-apps/<app>/values.yaml` (e.g. `global.image.vm.tag`, `common.image.tag`, ArgoCD's `global.image.tag`), and the pinned version vars at the top of `run.sh` (`METALLB_CHART_VERSION`, `ARGOCD_CHART_VERSION`, `KUBE_PROMETHEUS_STACK_VERSION` — note this last one is actually the Prometheus-Operator release tag used for the manually-applied CRDs, and must match the operator version bundled by the kube-prometheus-stack chart). [CONTRIBUTING.md](CONTRIBUTING.md) has a full "Testing and upgrading software versions" checklist, and a "Adding a new VictoriaMetrics-ecosystem Helm app" recipe for onboarding new products the same way `victoriatraces` was added.
+- Software/chart version bumps live in several places that must stay in sync: the `targetRevision` (chart version) in each `application.yaml`, explicit `image.tag` overrides inside the corresponding `helm-apps/<app>/values.yaml` (e.g. `global.image.vm.tag`, `common.image.tag`, ArgoCD's `global.image.tag`), and CLI versions in [mise.toml](mise.toml), and the pinned version vars at the top of `run.sh` (`METALLB_CHART_VERSION`, `ARGOCD_CHART_VERSION`, `KUBE_PROMETHEUS_STACK_VERSION` — note this last one is actually the Prometheus-Operator release tag used for the manually-applied CRDs, and must match the operator version bundled by the kube-prometheus-stack chart). [CONTRIBUTING.md](CONTRIBUTING.md) has a full "Testing and upgrading software versions" checklist, and a "Adding a new VictoriaMetrics-ecosystem Helm app" recipe for onboarding new products the same way `victoriatraces` was added.
 - [CHANGELOG.md](CHANGELOG.md) is maintained manually per release, listing bumped component/chart versions — update it when bumping versions.
 - Both README.md and CHANGELOG.md use an inline `<!-- TOC -->...<!-- TOC -->` block that is kept in sync with headings by hand.
 - Contribution workflow is fork-based (not branch-on-upstream): see [CONTRIBUTING.md](CONTRIBUTING.md) for the full fork/branch/PR/upstream-sync flow. PRs target `main` and are squash-merged; keep incremental commits during review rather than force-pushing/squashing locally (per [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md)).

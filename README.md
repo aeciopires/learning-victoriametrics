@@ -91,6 +91,8 @@ References:
 
 Install all packages and binaries following this [tutorial](REQUIREMENTS.md).
 
+In short: Docker (Ubuntu) or Colima + docker CLI (MacOS) and [mise](https://mise.jdx.dev) are installed manually. Every CLI used by this repository (``kind``, ``kubectl``, ``helm`` 4, ``argocd``, ``cmctl``, ``jq``) is pinned in [mise.toml](mise.toml), installed with ``mise install`` and executed by ``make`` through ``mise exec``.
+
 # Create cluster and deploy applications
 
 Create kind cluster and install helm apps using ``make`` command:
@@ -100,9 +102,13 @@ cd learning-victoriametrics
 make up
 ```
 
+Other targets: ``make help``, ``make requirements``, ``make tools`` (``mise install``), ``make helm-plugins``, ``make down`` and ``make recreate``.
+
 Actions performed:
 
-- Check requirements (including Helm 4)
+- Check the requirements installed outside of mise (``mise``, ``docker`` running, ``curl``, ``gpg``, ``sudo``)
+- Install the tools of [mise.toml](mise.toml) with ``mise install`` and check that ``helm`` is version 4
+- Run [run.sh](run.sh) with ``mise exec``, which performs the next steps
 - Raise the inotify limits of the host if they are too low for kind (Linux only, with ``sudo``, until the next reboot). See [softwares-ubuntu.md](softwares-ubuntu.md#inotify-limits) to make it permanent
 - Create kind Kubernetes cluster
 - Install MetalLB and ArgoCD with Helm

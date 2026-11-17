@@ -37,8 +37,14 @@ Date: 2026/11/16
   - helm: 3.22.1 -> 4.3.2
   - `make requirements` (Makefile) and `run.sh` now check that `helm` is installed and is version 4
   - helm-diff and helm-secrets install instructions rewritten for Helm 4: plugins are installed from signed release tarballs with provenance verification (`--keyring`), since Helm 4 dropped `--version` for plugins. helm-secrets is now split into the `secrets`, `secrets-getter` and `secrets-post-renderer` plugins
-- Bump CLI versions in softwares-ubuntu.md and softwares-macos.md:
+- Bump CLI versions:
   - helm-secrets: v4.7.10 -> v4.7.11
+- **Tools managed by [mise](https://mise.jdx.dev)** (replaces asdf and the manual installs of Go, cmctl and kubectl):
+  - New `mise.toml` pinning `argocd` 3.6.1, `cmctl` 2.6.2, `helm` 4.3.2, `jq` 1.8.2, `kind` 0.33.0 and `kubectl` 1.37.2, all with the aqua backend
+  - New mise task `helm-plugins` (`make helm-plugins`) installing helm-diff and helm-secrets for Helm 4 (signed tarballs, idempotent)
+  - Makefile rewritten: `make requirements` checks only what is installed outside of mise (`mise`, `docker` running, `curl`, `gpg`, `sudo`), runs `mise install` and checks Helm 4; `run.sh` and `kind` run through `mise exec`. New targets `help`, `tools` and `helm-plugins`. `SHELL` uses the bash of the `PATH`, so the same Makefile works on Ubuntu and MacOS
+  - Docker + compose plugin (Ubuntu) and Colima + docker CLI + docker-compose (MacOS, replaces Docker Desktop) are still installed outside of mise
+  - softwares-ubuntu.md, softwares-macos.md and REQUIREMENTS.md rewritten for mise and Colima (including inotify limits and network notes for Colima)
 - **Replaced ingress-nginx (retired project) with Envoy Gateway and the Gateway API**:
   - New app `helm-apps/envoy-gateway`: Envoy Gateway v1.10.0 (OCI chart `oci://docker.io/envoyproxy/gateway-helm`), which also installs the Gateway API CRDs v1.6.1
   - New app `helm-apps/gateway-api` (plain manifests): `GatewayClass`, `Gateway` `mycompany-gateway` with HTTP and HTTPS (`*.mycompany.com`) listeners, HTTP -> HTTPS redirect (`RequestRedirect` filter), `allowedRoutes` restricted to the `argocd`, `monitoring` and `myapps` namespaces, and the ArgoCD `HTTPRoute`

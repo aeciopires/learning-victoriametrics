@@ -104,10 +104,11 @@ This repository holds no application source code. It is a GitOps configuration r
 .
 ├── run.sh                       # Creates the kind cluster, installs MetalLB + ArgoCD via Helm,
 │                                 # then applies every helm-apps/<app>/application.yaml via kubectl
-├── Makefile                     # make up | make down | make recreate (wraps run.sh + requirement checks)
-├── REQUIREMENTS.md              # Points to softwares-ubuntu.md / softwares-macos.md
-├── softwares-ubuntu.md          # OS-level tool install instructions (asdf, kind, helm, kubectl, argocd-cli, cmctl, ...)
-├── softwares-macos.md           # Same, for MacOS (PT-BR)
+├── Makefile                     # make up | down | recreate | tools | helm-plugins (runs run.sh through mise exec)
+├── mise.toml                    # CLI versions (kind, kubectl, helm 4, argocd, cmctl, jq) + helm-plugins task
+├── REQUIREMENTS.md              # What is installed outside of mise vs by mise
+├── softwares-ubuntu.md          # Ubuntu: docker, mise, inotify limits
+├── softwares-macos.md           # MacOS: Colima + docker CLI + docker-compose, mise
 ├── LEARNING_VICTORIAMETRICS.md  # Curated links used while studying VictoriaMetrics/VictoriaLogs
 ├── CHANGELOG.md                 # One heading per release, listing bumped component/chart versions
 ├── CONTRIBUTING.md              # This file
@@ -229,8 +230,9 @@ Every third-party component pinned in this repo (`kind` node image, MetalLB, Arg
    - `targetRevision` in each `helm-apps/<app>/application.yaml`.
    - Any explicit `image.tag` overrides inside `helm-apps/<app>/values.yaml` (e.g. `global.image.vm.tag` in [victoriametrics-cluster-mode/values.yaml](helm-apps/victoriametrics-cluster-mode/values.yaml), `common.image.tag` in [victorialogs-cluster-mode/values.yaml](helm-apps/victorialogs-cluster-mode/values.yaml)).
    - The chart image tag in [helm-apps/argocd/values.yaml](helm-apps/argocd/values.yaml) (`global.image.tag`).
+   - The CLI versions in [mise.toml](mise.toml) (`kind`, `kubectl`, `helm`, `argocd`, `cmctl`, `jq`) and the plugin versions of its `helm-plugins` task. Check the latest ones with `mise latest <tool>` (e.g. `mise latest aqua:helm/helm`), keeping Helm on major version 4. Keep the table of [REQUIREMENTS.md](REQUIREMENTS.md) in sync.
 
-2. **Look up the latest stable versions** with Helm 4 (required by this repo, see [softwares-ubuntu.md](softwares-ubuntu.md#helm)), using the Helm repos already referenced by each `application.yaml`'s `repoURL`:
+2. **Look up the latest stable versions** with Helm 4 (required by this repo, installed by mise, run the commands below inside the repository directory or with `mise exec --`), using the Helm repos already referenced by each `application.yaml`'s `repoURL`:
 
    ```bash
    helm repo add metallb https://metallb.github.io/metallb
@@ -247,7 +249,7 @@ Every third-party component pinned in this repo (`kind` node image, MetalLB, Arg
 
    For the Prometheus-Operator CRDs applied directly in `run.sh` (not via Helm), match the `appVersion` reported for `prometheus-community/kube-prometheus-stack` — the chart bundles that exact Prometheus-Operator release, and its CRDs must match.
 
-3. **Update every location found in step 1** consistently (`run.sh` vars, each `application.yaml`'s `targetRevision`, and any explicit `image.tag` in `values.yaml`). Update the "Bump software versions" list in [CHANGELOG.md](CHANGELOG.md) under a new version heading.
+3. **Update every location found in step 1** consistently (`run.sh` vars, each `application.yaml`'s `targetRevision`, any explicit `image.tag` in `values.yaml`, and [mise.toml](mise.toml)), then run `mise install`. Update the "Bump software versions" list in [CHANGELOG.md](CHANGELOG.md) under a new version heading.
 
 4. **Test on a local `kind-multinodes` cluster:**
 
