@@ -34,10 +34,12 @@ Open the browser and access the URL: https://kube-pires.mycompany.com/
 It's show the follow informations of the pods:
 
 
-- ``/``        => Show the hostname, interface name and IP addresses;
-- ``/health``  => Show the status of the application;
+- ``/``        => Show the hostname, network interfaces and IP addresses, OS/architecture, version and trace ID;
+- ``/livez``   => Liveness: the process is alive (used by the liveness probe);
+- ``/readyz``  => Readiness: ``200`` when it can receive requests, ``503`` while shutting down (used by the readiness probe);
+- ``/health``  => Original health check, always ``200`` (kept for compatibility);
 - ``/metrics`` => Show the metrics in supported format by prometheus;
-- ``/env``     => Show the environment variables;
+- ``/env``     => Show the environment variables (**sensitive**);
 - ``/css``     => Show the CSS template;
 
 # References

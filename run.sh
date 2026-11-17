@@ -39,7 +39,7 @@ INOTIFY_MAX_USER_INSTANCES="512"
 # Checking Helm version
 #---------------------------------------
 
-# This repository requires Helm 4 (see softwares-ubuntu.md / softwares-macos.md)
+# This repository requires Helm 4 (see REQUIREMENTS.md)
 HELM_VERSION=$(helm version --template '{{.Version}}' 2>/dev/null)
 if [[ "$HELM_VERSION" != v4.* ]]; then
   echo "[ERROR] Helm 4 is required, found: ${HELM_VERSION:-none}"

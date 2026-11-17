@@ -28,11 +28,20 @@ Date: 2026/11/16
     - helm chart: 0.2.12 -> 0.2.13
     - vmauth image: v1.155.0 -> v1.156.0
     - removed the `tlsAutocertHosts` / `tlsAutocertEmail` / `tlsAutocertCacheDir` values, dropped upstream in this chart version
-  - kube-prometheus-stack: 92.18.0 -> 93.3.0
-    - Grafana: 13.3.0 -> 13.3.1 (grafana helm chart 14.3.1 -> 14.4.1)
+  - kube-prometheus-stack: 92.18.0 -> 93.3.1
+    - Grafana: 13.3.0 -> 13.3.1 (grafana helm chart 14.3.1 -> 14.4.2)
     - Prometheus: v3.15.1 -> v3.16.0
   - Prometheus-Operator: v0.94.2 -> v0.95.2
+  - kube-pires: 1.1.0 -> 2.0.0
+    - helm chart: `HEAD` of the Git repository -> tag `v7.0.0` (chart 4.0.0), now pinned
+    - values.yaml regenerated from the chart defaults, keeping only the customizations of this lab (HPA with 2 min replicas, ServiceMonitor, PDB and the HTTPRoute). New defaults: probes on `/livez` and `/readyz`, graceful shutdown (`config.shutdownDelay: 10s`), `podSecurityContext`/`securityContext` following the "Restricted" Pod Security Standard (non-root `65532`, read-only root filesystem), requests 10m/32Mi and limit 128Mi
   - Unchanged (already latest): kind 0.33.0 / node image v1.37.0, MetalLB 0.16.2, cert-manager v1.21.3
+- **Support for Ubuntu 26.04 LTS** (besides 24.04 and 22.04):
+  - softwares-ubuntu.md: lists the supported versions, installs `python-is-python3` instead of the per-version `update-alternatives` commands (the Python version differs on each release), makes `telnet` optional and adds notes about sudo-rs and uutils coreutils, the defaults on 26.04
+  - softwares-ubuntu.md: documents the `docker.io` + `docker-compose-v2` packages of the Ubuntu archive as an alternative to the Docker CE convenience script
+  - `make requirements` prints a warning on Ubuntu versions not listed in `SUPPORTED_UBUNTU_VERSIONS` (Makefile)
+- Requirements docs reorganized: REQUIREMENTS.md now holds everything common to Ubuntu and MacOS (supported OSes, tools installed by mise with their versions, Helm plugins, kind, inotify limits, optional software and VSCode plugins), and softwares-ubuntu.md / softwares-macos.md keep only the OS-specific steps
+- softwares-macos.md fixes: `softwareupdate --install-rosetta` (was `software --install rosetta`), `~/.bash_profile` (was the nonexistent `/User/$USER/.bash_profile`) and `$PATH` no longer escaped inside single quotes. Visual Studio Code is installed with `brew install --cask`
 - Migrated to **Helm 4**:
   - helm: 3.22.1 -> 4.3.2
   - `make requirements` (Makefile) and `run.sh` now check that `helm` is installed and is version 4
@@ -54,7 +63,7 @@ Date: 2026/11/16
   - `run.sh` installs the apps in dependency order (envoy-gateway -> cert-manager -> gateway-api -> others), waits for the `Gateway` to be `Programmed` and every `HTTPRoute` to be `Accepted`, and writes the Gateway address (`status.addresses`) to `/etc/hosts`
   - Removed the `extraPortMappings` (host ports 80/443) of the kind control-plane node, unused since the traffic goes through the MetalLB IP, which conflicted with other kind clusters
   - Removed `helm-apps/ingress-nginx`
-- New app `helm-apps/metrics-server` (chart 3.14.0, metrics-server 0.9.0, `--kubelet-insecure-tls` for kind). Fixes the HPAs of ingress-nginx and kube-pires being reported as `Degraded` by ArgoCD, which made the ingress-nginx sync fail before configuring its admission webhook (`x509: certificate signed by unknown authority`) and blocked the Ingresses of the other apps
+- New app `helm-apps/metrics-server` (chart 3.14.0, metrics-server 0.9.1 via `image.tag` override since the chart still bundles 0.9.0, `--kubelet-insecure-tls` for kind). Fixes the HPAs of ingress-nginx and kube-pires being reported as `Degraded` by ArgoCD, which made the ingress-nginx sync fail before configuring its admission webhook (`x509: certificate signed by unknown authority`) and blocked the Ingresses of the other apps
 - `run.sh` fixes:
   - Raises the inotify limits of the host (Linux) when they are below the values recommended by kind, fixing Vector (VictoriaLogs) in `CrashLoopBackOff` with `Too many open files`. See the new "inotify limits" section of softwares-ubuntu.md to make it permanent
   - Aborts if `kind create cluster` fails and switches to the `kind-kind-multinodes` kubectl context, so it never installs anything in another cluster

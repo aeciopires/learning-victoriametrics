@@ -91,7 +91,7 @@ References:
 
 Install all packages and binaries following this [tutorial](REQUIREMENTS.md).
 
-In short: Docker (Ubuntu) or Colima + docker CLI (MacOS) and [mise](https://mise.jdx.dev) are installed manually. Every CLI used by this repository (``kind``, ``kubectl``, ``helm`` 4, ``argocd``, ``cmctl``, ``jq``) is pinned in [mise.toml](mise.toml), installed with ``mise install`` and executed by ``make`` through ``mise exec``.
+In short: Docker (Ubuntu 26.04, 24.04 or 22.04 LTS) or Colima + docker CLI (MacOS) and [mise](https://mise.jdx.dev) are installed manually. Every CLI used by this repository (``kind``, ``kubectl``, ``helm`` 4, ``argocd``, ``cmctl``, ``jq``) is pinned in [mise.toml](mise.toml), installed with ``mise install`` and executed by ``make`` through ``mise exec``.
 
 # Create cluster and deploy applications
 
@@ -109,7 +109,7 @@ Actions performed:
 - Check the requirements installed outside of mise (``mise``, ``docker`` running, ``curl``, ``gpg``, ``sudo``)
 - Install the tools of [mise.toml](mise.toml) with ``mise install`` and check that ``helm`` is version 4
 - Run [run.sh](run.sh) with ``mise exec``, which performs the next steps
-- Raise the inotify limits of the host if they are too low for kind (Linux only, with ``sudo``, until the next reboot). See [softwares-ubuntu.md](softwares-ubuntu.md#inotify-limits) to make it permanent
+- Raise the inotify limits of the host if they are too low for kind (Linux only, with ``sudo``, until the next reboot). See [REQUIREMENTS.md](REQUIREMENTS.md#inotify-limits) to make it permanent (Ubuntu) or to set it in the Colima VM (MacOS)
 - Create kind Kubernetes cluster
 - Install MetalLB and ArgoCD with Helm
 - Install with ArgoCD: Envoy Gateway (Gateway API), cert-manager, Gateway API resources (local CA, Gateway, HTTPRoutes), metrics-server, VictoriaMetrics (cluster mode), VictoriaLogs (cluster mode), VictoriaTraces (cluster mode), kube-prometheus-stack and kube-pires

@@ -1,67 +1,50 @@
 <!-- TOC -->
 
 - [Ubuntu](#ubuntu)
-  - [Essential](#essential)
+  - [Essentials](#essentials)
+    - [Notes for Ubuntu 26.04](#notes-for-ubuntu-2604)
   - [Optionals](#optionals)
 - [docker](#docker)
 - [mise](#mise)
-  - [Tools installed by mise](#tools-installed-by-mise)
-  - [Helm plugins](#helm-plugins)
-- [kind](#kind)
-  - [inotify limits](#inotify-limits)
+- [inotify limits](#inotify-limits)
 
 <!-- TOC -->
 
+Specific instructions for Ubuntu. What is common to every operating system (tools installed by mise, Helm plugins, kind, optional VSCode plugins) is in [REQUIREMENTS.md](REQUIREMENTS.md).
+
 # Ubuntu
 
-## Essential
+Supported versions (64 bits): **Ubuntu 26.04 LTS**, **24.04 LTS** and **22.04 LTS**. ``make requirements`` prints a warning on other Ubuntu versions.
 
-Run the following commands on Ubuntu 24.04/22.02:
+## Essentials
 
-```bash
-sudo apt install -y vim telnet netcat-openbsd git elinks curl wget net-tools python3 python3-pip python3-venv default-jdk make gnupg
-```
-
-For Python "3.10.*" run the following command to create the symbolic link:
-
-```bash
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
-```
-
-For Python "3.12.*" run the following command to create the symbolic link:
-
-```bash
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
-```
-
-## Optionals
-
-Install the following software:
-
-- Google Chrome
-- Visual Code: https://code.visualstudio.com
-  - Ubuntu install: https://code.visualstudio.com/docs/setup/linux
-  - Plugins for Visual Code
-  - Instructions to export/import plugins: https://stackoverflow.com/questions/35773299/how-can-you-export-the-visual-studio-code-extension-list
-  - docker: https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-docker (Requires installation of the docker command shown in the following sections).
-  - gitlens: https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens (Requires installation of the git command shown in the previous section).
-  - Helm Intellisense: https://marketplace.visualstudio.com/items?itemName=Tim-Koehler.helm-intellisense
-  - Markdown-all-in-one: https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one
-  - Markdown-lint: https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint
-  - Markdown-toc: https://marketplace.visualstudio.com/items?itemName=CharlesWan.markdown-toc
-  - YAML: https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml
-  - Theme for VSCode:
-    - https://code.visualstudio.com/docs/getstarted/themes
-    - https://dev.to/thegeoffstevens/50-vs-code-themes-for-2020-45cc
-    - https://vscodethemes.com/
-
-# docker
-
-Docker and Docker Compose are installed outside of mise. Install Docker CE (Community Edition) following the instructions on the page: <https://docs.docker.com/engine/install/ubuntu/>. The convenience script also installs the ``docker compose`` plugin.
+Run the following commands:
 
 ```bash
 sudo apt update
-sudo apt install -y acl
+sudo apt install -y vim netcat-openbsd git elinks curl wget net-tools python3 python3-pip python3-venv python-is-python3 default-jdk make gnupg acl
+```
+
+> ``python-is-python3`` creates the ``/usr/bin/python`` symbolic link to the default ``python3`` of the release, whatever its version, so no ``update-alternatives`` is needed.
+
+Optionally, install ``telnet`` (``sudo apt install -y telnet``). It's not required by this repository; ``nc`` (netcat-openbsd) covers the same port tests.
+
+### Notes for Ubuntu 26.04
+
+Ubuntu 26.04 replaced some core packages with Rust implementations: ``sudo`` is [sudo-rs](https://github.com/trifectatechfoundation/sudo-rs) and most of the core utilities come from [uutils coreutils](https://github.com/uutils/coreutils). The scripts of this repository (``Makefile``, ``run.sh`` and the ``helm-plugins`` mise task) only use common options of ``sudo``, ``sysctl``, ``tee``, ``tr``, ``uname``, ``mktemp`` and ``cat``, so they work with both implementations. If you hit an incompatibility, the original ``sudo`` (sudo.ws) and GNU coreutils are still packaged by Ubuntu, see the release notes of Ubuntu 26.04.
+
+## Optionals
+
+See the list of optional software and VSCode plugins in [REQUIREMENTS.md](REQUIREMENTS.md#optionals). On Ubuntu:
+
+- Google Chrome: https://www.google.com/chrome/
+- Visual Studio Code: https://code.visualstudio.com/docs/setup/linux
+
+# docker
+
+Docker and Docker Compose are installed outside of mise. Install Docker CE (Community Edition) following the instructions on the page: <https://docs.docker.com/engine/install/ubuntu/>. The convenience script also installs the ``docker compose`` plugin. Docker supports Ubuntu 22.04 (jammy), 24.04 (noble) and 26.04 (resolute).
+
+```bash
 curl -fsSL https://get.docker.com -o get-docker.sh;
 sudo sh get-docker.sh;
 sudo usermod -aG docker $USER;
@@ -71,11 +54,17 @@ docker version
 docker compose version
 ```
 
+Alternatively, if the Docker apt repository doesn't publish packages for your Ubuntu release (e.g. in the first weeks after a new release), install the Docker packages of the Ubuntu archive. They are older than Docker CE, but also provide ``docker compose``:
+
+```bash
+sudo apt install -y docker.io docker-compose-v2 docker-buildx
+sudo usermod -aG docker $USER;
+sudo setfacl -m user:$USER:rw /var/run/docker.sock
+```
+
 Reference: <https://docs.docker.com/engine/install/linux-postinstall/#configure-docker-to-start-on-boot>
 
 # mise
-
-[mise](https://mise.jdx.dev) installs and pins the versions of every CLI used by this repository. The versions are declared in the [mise.toml](mise.toml) file at the root of the repository, and ``make`` runs every command through ``mise exec``, so the versions installed in your ``PATH`` don't matter.
 
 Install mise and activate it in your shell:
 
@@ -90,77 +79,13 @@ mise --version
 
 > If you use zsh, run ``echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc`` instead.
 
-To update mise later, run:
+To update mise later, run ``mise self-update``.
 
-```bash
-mise self-update
-```
+Then install the tools of this repository: see [Tools installed by mise](REQUIREMENTS.md#tools-installed-by-mise).
 
-References:
-- https://mise.jdx.dev/getting-started.html
-- https://mise.jdx.dev/installing-mise.html
+# inotify limits
 
-## Tools installed by mise
-
-Inside the directory of this repository, install the tools declared in [mise.toml](mise.toml) (``make up`` also does it):
-
-```bash
-cd learning-victoriametrics
-mise install
-mise ls --current
-```
-
-| Tool | Description | Reference |
-|---|---|---|
-| ``argocd`` | ArgoCD CLI | https://argo-cd.readthedocs.io/en/stable/ |
-| ``cmctl`` | cert-manager CLI, used by ``run.sh`` to wait for the cert-manager API | https://cert-manager.io/docs/reference/cmctl/ |
-| ``helm`` | **Helm 4**. Helm 3 is not supported: ``make`` and ``run.sh`` fail if ``helm`` isn't version 4 | https://helm.sh/docs/overview/ |
-| ``jq`` | JSON processor | https://jqlang.org/ |
-| ``kind`` | Kubernetes in Docker, creates the local cluster | https://kind.sigs.k8s.io/ |
-| ``kubectl`` | Kubernetes CLI | https://kubernetes.io/docs/reference/kubectl/ |
-
-Every tool uses the [aqua backend](https://mise.jdx.dev/dev-tools/backends/aqua.html) of mise (official release binaries, verified with checksums). To bump a version, change it in [mise.toml](mise.toml) and run ``mise install``.
-
-When mise is activated in your shell, these versions are used automatically inside the directory of the repository. Outside of it, run ``mise exec -- <command>`` from the repository directory, or use ``make``.
-
-## Helm plugins
-
-Optional. The ``helm-diff`` and ``helm-secrets`` plugins are installed by a [mise task](https://mise.jdx.dev/tasks/) declared in [mise.toml](mise.toml):
-
-```bash
-make helm-plugins
-# or
-mise run helm-plugins
-```
-
-Helm 4 verifies plugin provenance by default and doesn't support ``--version`` for plugins anymore, so the task installs the signed release tarballs, verifying them with the GPG public keys of the maintainers (https://github.com/databus23.gpg and https://github.com/jkroepke.gpg). In Helm 4, ``helm-secrets`` is split into three plugins: ``secrets``, ``secrets-getter`` and ``secrets-post-renderer``. The task is idempotent: it only installs the plugins missing or in another version.
-
-References:
-- https://github.com/databus23/helm-diff
-- https://github.com/jkroepke/helm-secrets/blob/main/docs/Installation.md
-
-# kind
-
-Kind (Kubernetes in Docker) runs Kubernetes in a local environment for testing and learning, but it is not recommended for production use. It's installed by mise (see [Tools installed by mise](#tools-installed-by-mise)).
-
-The cluster of this lab (``kind-multinodes``, 1 control plane and 2 workers) is created by ``make up``, with the configuration written by [run.sh](run.sh) (``KIND_CLUSTER_FILE``).
-
-Useful commands:
-
-```bash
-kind get clusters
-kind get nodes --name kind-multinodes
-```
-
-References:
-- https://kind.sigs.k8s.io/docs/user/quick-start/
-- https://github.com/kubernetes-sigs/kind/releases
-
-## inotify limits
-
-The kind nodes share the inotify limits of the host kernel. The Ubuntu defaults (``max_user_instances=128``) are too low for multi-node clusters, and pods like Vector (VictoriaLogs) crash with ``Too many open files``.
-
-``run.sh`` raises the limits with ``sudo sysctl -w`` when they are too low, but only until the next reboot. To make the change permanent:
+See why in [REQUIREMENTS.md](REQUIREMENTS.md#inotify-limits). ``run.sh`` raises the limits of the host only until the next reboot. To make the change permanent:
 
 ```bash
 cat << EOF | sudo tee /etc/sysctl.d/99-kind-inotify.conf
@@ -171,5 +96,3 @@ EOF
 sudo sysctl --system
 sysctl fs.inotify.max_user_watches fs.inotify.max_user_instances
 ```
-
-Reference: https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files

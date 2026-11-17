@@ -106,9 +106,9 @@ This repository holds no application source code. It is a GitOps configuration r
 │                                 # then applies every helm-apps/<app>/application.yaml via kubectl
 ├── Makefile                     # make up | down | recreate | tools | helm-plugins (runs run.sh through mise exec)
 ├── mise.toml                    # CLI versions (kind, kubectl, helm 4, argocd, cmctl, jq) + helm-plugins task
-├── REQUIREMENTS.md              # What is installed outside of mise vs by mise
-├── softwares-ubuntu.md          # Ubuntu: docker, mise, inotify limits
-├── softwares-macos.md           # MacOS: Colima + docker CLI + docker-compose, mise
+├── REQUIREMENTS.md              # Common to every OS: tools of mise + versions, Helm plugins, kind, inotify, optionals
+├── softwares-ubuntu.md          # Ubuntu only: apt packages, docker, mise install, permanent inotify limits
+├── softwares-macos.md           # MacOS only: Homebrew, Colima + docker CLI + docker-compose, mise install, inotify, network
 ├── LEARNING_VICTORIAMETRICS.md  # Curated links used while studying VictoriaMetrics/VictoriaLogs
 ├── CHANGELOG.md                 # One heading per release, listing bumped component/chart versions
 ├── CONTRIBUTING.md              # This file

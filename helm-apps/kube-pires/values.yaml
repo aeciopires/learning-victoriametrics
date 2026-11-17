@@ -20,30 +20,85 @@ image:
   repository: aeciopires/kube-pires
   # -- Pull policy of Docker image
   pullPolicy: IfNotPresent
-  # -- Docker image tag
-  tag: "1.1.0"
+  # -- Docker image tag. If empty, the `appVersion` of the `Chart.yaml` is used
+  tag: "2.0.0"
 
 # -- List of dockerconfig secrets names to use when pulling images
 imagePullSecrets: []
 
+# -- Override the name of the chart
 nameOverride: ""
+# -- Override the full name of the resources
 fullnameOverride: ""
 
 # -- Pod annotations configurations
 podAnnotations: {}
 
-# -- Pod security configurations
-podSecurityContext: {}
-  # fsGroup: 2000
+# -- Seconds that Kubernetes waits after sending SIGTERM before killing the container.
+# After SIGTERM the application fails `/readyz` for `config.shutdownDelay`, then stops receiving new connections and
+# finishes the requests in progress (up to 10 seconds). Keep it greater than `config.shutdownDelay` + 10s
+terminationGracePeriodSeconds: 30
 
-# -- Security context configurations
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+# Configuration of the application (environment variables). See the file app/README.md.
+config:
+  # -- Mode of the Gin framework: `debug`, `release` or `test` (env var `GIN_MODE`)
+  ginMode: release
+  # -- Minimum level of the logs: `debug`, `info`, `warn` or `error` (env var `LOG_LEVEL`).
+  # With `info`, the access logs of `/livez`, `/readyz`, `/health` and `/metrics` are not written
+  logLevel: info
+  # -- Format of the logs: `json` (one JSON object per line, recommended for Loki) or `text` (env var `LOG_FORMAT`)
+  logFormat: json
+  # -- Comma-separated IPs/CIDRs of the reverse proxies (example: the Ingress controller) whose
+  # `X-Forwarded-For` header is trusted to get the IP of the client. Empty means no proxy is trusted (env var `TRUSTED_PROXIES`)
+  trustedProxies: ""
+  # -- Time that the application keeps answering requests after SIGTERM while `/readyz` answers 503, so that
+  # Kubernetes, the Ingress controller and the cloud load balancers stop sending new requests to the pod before it
+  # closes. Go duration (`0s` disables, example: `10s`) (env var `SHUTDOWN_DELAY`)
+  shutdownDelay: 10s
+
+# Traces with OpenTelemetry (OTLP over HTTP). See the file docs/OBSERVABILITY.md.
+tracing:
+  # -- Enables the export of traces
+  enabled: false
+  # -- OTLP/HTTP endpoint of the collector (Grafana Alloy, OpenTelemetry Collector, Tempo or Jaeger), port 4318.
+  # Example: `http://alloy.monitoring.svc.cluster.local:4318` (env var `OTEL_EXPORTER_OTLP_ENDPOINT`)
+  otlpEndpoint: ""
+  # -- Name of the service in the traces. If empty, the name of the chart is used (env var `OTEL_SERVICE_NAME`)
+  serviceName: ""
+  # -- Sampler (env var `OTEL_TRACES_SAMPLER`).
+  # See: [https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler](https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler)
+  sampler: parentbased_traceidratio
+  # -- Argument of the sampler. With `parentbased_traceidratio`, it is the fraction of the traces that are kept (`1.0` = 100%, `0.1` = 10%)
+  samplerArg: "1.0"
+  # -- Extra resource attributes, comma-separated (example: `deployment.environment.name=production`).
+  # The attributes `k8s.pod.name`, `k8s.namespace.name`, `k8s.node.name` and `k8s.deployment.name` are always added
+  resourceAttributes: ""
+
+# -- Extra environment variables of the container (list of `name`/`value` or `valueFrom`)
+extraEnv: []
+#  - name: OTEL_EXPORTER_OTLP_HEADERS
+#    valueFrom:
+#      secretKeyRef:
+#        name: otlp-credentials
+#        key: headers
+
+# -- Pod security configurations. The values follow the "Restricted" profile of the Pod Security Standards.
+# See: [https://kubernetes.io/docs/concepts/security/pod-security-standards/](https://kubernetes.io/docs/concepts/security/pod-security-standards/)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Security context configurations of the container.
+# See: [https://kubernetes.io/docs/tasks/configure-pod-container/security-context/](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
 
 service:
   # -- Type of service in Kubernetes cluster
@@ -54,6 +109,8 @@ service:
   createGcpBackendAndFrontendConfig: false
   # -- Annotations of service
   annotations: {}
+    #--- The annotation "kubernetes.io/ingress.class" is deprecated. Prefer the "ingress.className" parameter.
+    #--- See: https://kubernetes.io/docs/concepts/services-networking/ingress/#deprecated-annotation
 
 # Ingress configurations
 # Disabled: kube-pires is exposed through the Envoy Gateway (helm-apps/gateway-api) using the
@@ -61,16 +118,62 @@ service:
 ingress:
   # -- Enables Ingress
   enabled: false
+  # -- Create GCP Managed Certificate
+  createGcpManagedCertificate: false
+  # -- Create Cert Manager Issuer
+  createCertManagerIssuer: false
+  # -- Email for Cert Manager Issue
+  certManagerIssueEmail: "CHANGE_HERE"
+  # -- Name of the IngressClass used by the Ingress (example: nginx, alb, gce)
+  className: ""
+  # -- Ingress annotations. Examples to AWS ALB, nginx-ingress, GCP and cert-manager are commented below
+  annotations: {}
+    #--- Annotations to create loadbalancer in AWS of the type application for external access of the VPC
+    #kubernetes.io/ingress.class: alb
+    #alb.ingress.kubernetes.io/scheme: internet-facing
+    #alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    #alb.ingress.kubernetes.io/ssl-redirect: "443"
+    #alb.ingress.kubernetes.io/healthcheck-path: "/readyz"
+    #alb.ingress.kubernetes.io/healthcheck-port: http
+    #alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:AWS_REGION:AWS_ACCOUNT:certificate/ID_ACM_CERTIFICATE
+    #alb.ingress.kubernetes.io/tags: Scost=kube-pires, Environment=testing, Terraform=true, Kubernetes=true
+    #--- Annotations to use nginx-ingress
+    #kubernetes.io/ingress.class: nginx
+    #kubernetes.io/tls-acme: "true"
+    #--- Annotations to create loadbalancer in GCP of the type application for external access of the VPC
+    #kubernetes.io/ingress.class: "gce"
+    #kubernetes.io/ingress.allow-http: "true"
+    ## Name of static IP previous created in GCP
+    #kubernetes.io/ingress.global-static-ip-name: kube-pires
+    #networking.gke.io/v1beta1.FrontendConfig: kube-pires-frontend-config
+    ## Optional Annotation for GCP Managed Certificate
+    #networking.gke.io/managed-certificates: kube-pires-cert
+    ## Syntax '{"service_port_number/service_port_name:protocol"}'
+    #cloud.google.com/app-protocols: '{"http":"HTTP"}'
+    #--- Optional Annotation for cert-manager
+    #cert-manager.io/issuer: letsencrypt-production
+  # -- Ingress hosts
+  hosts: []
+    #- host: kube-pires.aeciopires.com
+    #  paths:
+    #    - path: /
+    #      pathType: Prefix
+  # -- Ingress TLS configuration
+  tls: []
+  #  - secretName: kube-pires-cert-empty
+  #    hosts:
+  #      - kube-pires.aeciopires.com
 
-# -- Requests and limits of pod resources.
+# -- Requests and limits of pod resources. The application uses about 5Mi of memory when idle and less than 32Mi under load.
+# See the section "CPU and memory" of the README.md file in the root of the repository.
 # See: [https://kubernetes.io/docs/concepts/configuration/manage-resources-containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers)
 resources:
   limits:
     cpu: 200m
-    memory: 256Mi
+    memory: 128Mi
   requests:
-    cpu: 5m
-    memory: 5Mi
+    cpu: 10m
+    memory: 32Mi
 
 # -- Auto scaling configurations
 autoscaling:
@@ -80,27 +183,29 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-# -- Health check on creation pod
+# -- Readiness probe: "can the pod receive new requests?". If it fails, the pod is removed from the Service
+# (no restart). `/readyz` answers 503 while the application is shutting down (see `config.shutdownDelay`)
 readinessProbe:
-  # -- Path of health check of application
-  path: /health
+  # -- Path of the readiness check of the application
+  path: /readyz
   # -- Number of seconds after the container has started before readiness
-  initialDelaySeconds: 5
-  # -- Specifies that the kubelet should perform a liveness probe every N seconds
-  periodSeconds: 10
+  initialDelaySeconds: 2
+  # -- Specifies that the kubelet should perform a readiness probe every N seconds
+  periodSeconds: 5
   # -- Number of seconds after which the probe times out
-  timeoutSeconds: 5
+  timeoutSeconds: 3
   # -- Minimum consecutive successes for the probe to be considered successful after having failed
   successThreshold: 1
   # -- When a probe fails, Kubernetes will try failureThreshold times before giving up.
   # Giving up in case of liveness probe means restarting the container.
   # In case of readiness probe the Pod will be marked Unready
-  failureThreshold: 3
+  failureThreshold: 2
 
-# -- Healh check continuos
+# -- Liveness probe: "is the process alive?". If it fails `failureThreshold` times, the container is restarted.
+# `/livez` keeps answering 200 during the shutdown, so the pod is not restarted while it finishes its requests
 livenessProbe:
-  # -- Path of health check of application
-  path: /health
+  # -- Path of the liveness check of the application
+  path: /livez
   # -- Number of seconds after the container has started before liveness
   initialDelaySeconds: 5
   # -- Specifies that the kubelet should perform a liveness probe every N seconds
@@ -138,15 +243,37 @@ mySecret:
   mySecretHighSecurity: "false"
   mySecretDistributedTracingEnabled: "true"
 
-# -- Service monitor configurations
+# -- ServiceMonitor configurations. Requires the CRDs of the Prometheus Operator.
+# See: [https://prometheus-operator.dev/docs/developer/getting-started/](https://prometheus-operator.dev/docs/developer/getting-started/)
 serviceMonitor:
+  # -- Create a ServiceMonitor to Prometheus Operator collect the metrics of the /metrics endpoint
   enabled: true
+  # -- Additional labels of the ServiceMonitor. Use it if the Prometheus only selects ServiceMonitors with specific labels (example: release: monitoring)
   additionalLabels: {}
+  # -- Path of the metrics endpoint
   path: "/metrics"
+  # -- Interval between scrapes
   interval: "30s"
+  # -- Timeout of each scrape
   scrapeTimeout: "10s"
+  # -- Namespace of the ServiceMonitor. If empty, the namespace of the release is used
   namespace: "myapps"
+  # -- Namespaces where the Service is searched. If empty, the namespace of the release is used
   namespaceSelector: {}
+
+# Grafana dashboards (metrics, logs and traces) of the directory dashboards/ of the chart, created as ConfigMaps.
+# They are imported by the sidecar of Grafana, enabled by default in the charts kube-prometheus-stack and grafana.
+# See: [https://github.com/grafana/helm-charts/tree/main/charts/grafana#sidecar-for-dashboards](https://github.com/grafana/helm-charts/tree/main/charts/grafana#sidecar-for-dashboards)
+grafanaDashboards:
+  # -- Create one ConfigMap per dashboard
+  enabled: false
+  # -- Labels of the ConfigMaps. The sidecar of Grafana imports the ConfigMaps with this label
+  labels:
+    grafana_dashboard: "1"
+  # -- Annotations of the ConfigMaps. Example to choose the folder in Grafana: `grafana_folder: kube-pires`
+  annotations: {}
+  # -- Namespace of the ConfigMaps. If empty, the namespace of the release is used
+  namespace: ""
 
 # -- Extra arbitrary Kubernetes manifests to deploy within the release
 extraManifests:
@@ -172,6 +299,7 @@ extraManifests:
             - name: kube-pires
               port: 80
 
+# -- Pod Disruption Budget configurations
 pdb:
   enabled: true
   maxUnavailable: 25%

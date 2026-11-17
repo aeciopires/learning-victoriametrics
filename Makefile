@@ -15,6 +15,9 @@ MISE_EXEC := mise exec --
 
 # Installed outside of mise (see REQUIREMENTS.md)
 SYSTEM_PACKAGES := mise docker curl gpg sudo
+
+# Ubuntu releases supported by this repository (see softwares-ubuntu.md)
+SUPPORTED_UBUNTU_VERSIONS := 22.04 24.04 26.04
 #----------------------------------------------------------------------------------------------------------
 
 
@@ -40,6 +43,15 @@ help:
 	@echo "make recreate      # down + up"
 
 requirements:
+	@if [ -r /etc/os-release ]; then \
+	  . /etc/os-release; \
+	  if [ "$$ID" = "ubuntu" ]; then \
+	    case " $(SUPPORTED_UBUNTU_VERSIONS) " in \
+	      *" $$VERSION_ID "*) echo "Found Ubuntu $$VERSION_ID" ;; \
+	      *) echo "[WARNING] Ubuntu $$VERSION_ID is not tested. Supported versions: $(SUPPORTED_UBUNTU_VERSIONS) (see softwares-ubuntu.md)" ;; \
+	    esac; \
+	  fi; \
+	fi
 	@for package in $(SYSTEM_PACKAGES); do \
 	  command -v $$package >/dev/null 2>&1 || { echo "[ERROR] Please install '$$package' (see REQUIREMENTS.md)"; exit 1; }; \
 	  echo "Found '$$package'"; \

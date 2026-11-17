@@ -19,7 +19,8 @@ spec:
   # https://argo-cd.readthedocs.io/en/stable/user-guide/multiple_sources/
   sources:
   - repoURL: https://gitlab.com/aeciopires/kube-pires
-    targetRevision: HEAD
+    # Git tag of the kube-pires repository (helm-chart 4.0.0, app 2.0.0)
+    targetRevision: v7.0.0
     path: helm-chart
     helm:
       valueFiles:
