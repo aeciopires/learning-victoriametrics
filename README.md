@@ -7,10 +7,10 @@
 - [VictoriaStack](#victoriastack)
 - [Requirements](#requirements)
 - [Create cluster and deploy applications](#create-cluster-and-deploy-applications)
+  - [Accessing the applications (Gateway API)](#accessing-the-applications-gateway-api)
   - [VictoriaMetrics Cluster Mode](#victoriametrics-cluster-mode)
   - [VictoriaLogs Cluster Mode](#victorialogs-cluster-mode)
   - [VictoriaTraces Cluster Mode](#victoriatraces-cluster-mode)
-  - [Accessing the applications (Gateway API)](#accessing-the-applications-gateway-api)
   - [argocd](#argocd)
   - [envoy-gateway](#envoy-gateway)
   - [gateway-api](#gateway-api)
@@ -201,7 +201,7 @@ make down
 
 # Maintainers
 
-- Aécio dos Santos Pires ([linkedin.com/in/aeciopires](https://www.linkedin.com/in/aeciopires/?locale=en_US))
+- Aécio dos Santos Pires [https://linktree.com/aeciopires](https://linktree.com/aeciopires)
 
 # License
 
